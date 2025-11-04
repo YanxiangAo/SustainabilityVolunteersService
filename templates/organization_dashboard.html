@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Dashboard - Sustainable Volunteer Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background-color: var(--gray-50);">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="flex items-center gap-2 mb-2">
+                <div style="width: 3rem; height: 3rem; background-color: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div>Organization</div>
+                    <div class="text-sm text-gray-500">{{ user.username }}</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="overview">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                <span>Overview</span>
+            </button>
+            <button class="nav-item" data-tab="publish">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>Publish Project</span>
+            </button>
+            <button class="nav-item" data-tab="manage">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Manage Projects</span>
+            </button>
+            <button class="nav-item" data-tab="registrations">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Registration List</span>
+            </button>
+        </nav>
+
+        <div style="position: absolute; bottom: 0; width: 16rem; padding: 1rem; border-top: 1px solid var(--gray-200);">
+            <a href="/logout" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview-tab">
+            <div class="mb-8">
+                <h2>Overview</h2>
+                <p class="text-gray-600">View your organization's project statistics</p>
+            </div>
+
+            <div class="grid grid-cols-4 mb-8">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Active Projects</p>
+                                <p style="font-size: 1.5rem; color: var(--secondary-blue);">5</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue); opacity: 0.5;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Total Participants</p>
+                                <p style="font-size: 1.5rem; color: var(--primary-green);">127</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green); opacity: 0.5;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Completed</p>
+                                <p style="font-size: 1.5rem; color: var(--accent-purple);">18</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple); opacity: 0.5;">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Pending Approval</p>
+                                <p style="font-size: 1.5rem; color: var(--accent-orange);">2</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-orange); opacity: 0.5;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Recent Project Activity</h3>
+                </div>
+                <div class="card-content">
+                    <p class="text-gray-600">Latest project updates will appear here...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Publish Project Tab -->
+        <div class="tab-content" id="publish-tab">
+            <div class="mb-8">
+                <h2>Publish New Project</h2>
+                <p class="text-gray-600">Fill in project information and submit for approval</p>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <form method="POST" action="/api/create-project">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="project-title">Project Name *</label>
+                                <input type="text" id="project-title" name="title" placeholder="Enter project name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="project-category">Category *</label>
+                                <input type="text" id="project-category" name="category" placeholder="e.g. Environmental, Education, Care" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="project-description">Project Description *</label>
+                            <textarea id="project-description" name="description" placeholder="Describe the project content, goals, and significance" rows="5" required></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="form-group">
+                                <label for="project-date">Activity Date *</label>
+                                <input type="date" id="project-date" name="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="project-location">Location *</label>
+                                <input type="text" id="project-location" name="location" placeholder="Enter location" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="project-participants">Max Participants *</label>
+                                <input type="number" id="project-participants" name="max_participants" placeholder="e.g. 10" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-group">
+                                <label for="project-duration">Duration (hours) *</label>
+                                <input type="number" id="project-duration" name="duration" placeholder="e.g. 3" min="0.5" step="0.5" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="project-points">Points *</label>
+                                <input type="number" id="project-points" name="points" placeholder="Usually hours × 20" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4 pt-4">
+                            <button type="submit" class="btn btn-secondary">Submit for Approval</button>
+                            <button type="button" class="btn btn-outline">Save Draft</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Projects Tab -->
+        <div class="tab-content" id="manage-tab">
+            <div class="mb-8">
+                <h2>Manage Projects</h2>
+                <p class="text-gray-600">Manage all your published volunteer projects</p>
+            </div>
+
+            <div id="projects-list">
+                <p class="text-gray-600">Your projects will appear here...</p>
+            </div>
+        </div>
+
+        <!-- Registrations Tab -->
+        <div class="tab-content" id="registrations-tab">
+            <div class="mb-8">
+                <h2>Registration List</h2>
+                <p class="text-gray-600">View and manage project registrations</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Community Waste Sorting Campaign - Registration List</h3>
+                    <p class="text-sm text-gray-600 mt-1">3 people registered</p>
+                </div>
+                <div class="card-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Smith</td>
+                                <td>john@example.com</td>
+                                <td>138****1234</td>
+                                <td>2025-11-03</td>
+                                <td><button class="btn btn-ghost btn-sm">View Details</button></td>
+                            </tr>
+                            <tr>
+                                <td>Emma Wilson</td>
+                                <td>emma@example.com</td>
+                                <td>139****5678</td>
+                                <td>2025-11-03</td>
+                                <td><button class="btn btn-ghost btn-sm">View Details</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+            item.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabName + '-tab').classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

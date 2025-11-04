@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sustainable Volunteer Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <!-- Logo and Title -->
+            <div class="text-center mb-6">
+                <div class="flex items-center justify-center gap-2 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-green);">
+                        <path d="M12 2v20M2 12h20M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+                    </svg>
+                    <h1 style="color: var(--primary-green); margin: 0;">Volunteer Platform</h1>
+                </div>
+                <p class="text-gray-600">Connecting volunteers, building a better future</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 style="margin-bottom: 0.5rem; font-size: 1.5rem;">Welcome</h2>
+                    <p class="text-sm text-gray-600">Login or register to start your volunteer journey</p>
+                </div>
+                <div class="card-content">
+                    {% if error %}
+                    <div class="alert" style="background:#fee2e2;color:#991b1b;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
+                        {{ error }}
+                    </div>
+                    {% endif %}
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button class="tab active" data-tab="login">Login</button>
+                        <button class="tab" data-tab="register">Register</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div class="tab-content active" id="login-tab">
+                        <form id="login-form" method="POST" action="{{ url_for('main.login') }}">
+                            <div class="form-group">
+                                <label for="login-type">User Type</label>
+                                <select id="login-type" name="user_type" required>
+                                    <option value="participant">Participant</option>
+                                    <option value="organization">Organization</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="login-username">Username / Email</label>
+                                <input type="text" id="login-username" name="username" placeholder="Enter username or email" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="login-password">Password</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="login-password" name="password" placeholder="Enter password" required>
+                                    <button type="button" class="password-toggle" onclick="togglePassword('login-password')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" id="remember" name="remember">
+                                    <label for="remember" style="margin: 0; font-weight: normal;">Remember me</label>
+                                </div>
+                                <a href="#" class="text-sm text-blue-600">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                        </form>
+                    </div>
+
+                    <!-- Register Form -->
+                    <div class="tab-content" id="register-tab">
+                        <form id="register-form" method="POST" action="{{ url_for('main.register') }}">
+                            <div class="form-group">
+                                <label for="register-type">User Type</label>
+                                <select id="register-type" name="user_type" required>
+                                    <option value="participant">Participant</option>
+                                    <option value="organization">Organization</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-username">Username</label>
+                                <input type="text" id="register-username" name="username" placeholder="Enter username" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-email">Email</label>
+                                <input type="email" id="register-email" name="email" placeholder="Enter email address" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-password">Password</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="register-password" name="password" placeholder="Enter password (at least 6 characters)" required minlength="6">
+                                    <button type="button" class="password-toggle" onclick="togglePassword('register-password')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="register-confirm-password">Confirm Password</label>
+                                <input type="password" id="register-confirm-password" name="confirm_password" placeholder="Re-enter password" required minlength="6">
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+
+                            <p class="text-xs text-gray-500 text-center mt-4">
+                                By registering, you agree to our Terms of Service and Privacy Policy
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-6">
+                <a href="/" class="btn btn-ghost">Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

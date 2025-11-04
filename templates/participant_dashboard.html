@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Participant Dashboard - Sustainable Volunteer Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background-color: var(--gray-50);">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="flex items-center gap-2 mb-2">
+                <div style="width: 3rem; height: 3rem; background-color: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green);">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <div>Volunteer</div>
+                    <div class="text-sm text-gray-500">{{ user.username }}</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="overview">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>Profile</span>
+            </button>
+            <button class="nav-item" data-tab="browse">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <span>Available Projects</span>
+            </button>
+            <button class="nav-item" data-tab="registrations">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>My Registrations</span>
+            </button>
+            <a href="/volunteer-record" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Hour Records</span>
+            </a>
+        </nav>
+
+        <div style="position: absolute; bottom: 0; width: 16rem; padding: 1rem; border-top: 1px solid var(--gray-200);">
+            <a href="/logout" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview-tab">
+            <div class="mb-8">
+                <h2>Personal Dashboard</h2>
+                <p class="text-gray-600">View your volunteer statistics and achievements</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-4 mb-8">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Total Hours</p>
+                                <p style="font-size: 1.5rem; color: var(--primary-green);">68h</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green); opacity: 0.5;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Points</p>
+                                <p style="font-size: 1.5rem; color: var(--secondary-blue);">1360</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue); opacity: 0.5;">
+                                <circle cx="12" cy="8" r="7"/>
+                                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Completed</p>
+                                <p style="font-size: 1.5rem; color: var(--accent-purple);">12</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple); opacity: 0.5;">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-content">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">Upcoming</p>
+                                <p style="font-size: 1.5rem; color: var(--accent-orange);">3</p>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-orange); opacity: 0.5;">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Badges Section -->
+            <div class="card mb-8">
+                <div class="card-header">
+                    <h3 style="margin: 0;">My Badges</h3>
+                    <p class="text-sm text-gray-600 mt-1">Earn achievement badges through volunteer service</p>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-cols-3" id="badges-container">
+                        <!-- Badges will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Projects -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Recommended Projects</h3>
+                    <p class="text-sm text-gray-600 mt-1">Based on your interests</p>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-cols-2" id="recommended-projects">
+                        <!-- Projects will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Browse Projects Tab -->
+        <div class="tab-content" id="browse-tab">
+            <div class="mb-8">
+                <h2>Available Projects</h2>
+                <p class="text-gray-600">Browse and register for volunteer projects</p>
+            </div>
+            <div class="grid grid-cols-3" id="browse-projects">
+                <!-- Projects will be loaded here -->
+            </div>
+        </div>
+
+        <!-- My Registrations Tab -->
+        <div class="tab-content" id="registrations-tab">
+            <div class="mb-8">
+                <h2>My Registrations</h2>
+                <p class="text-gray-600">Manage your registered volunteer projects</p>
+            </div>
+            <div id="my-registrations">
+                <!-- Registrations will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/participant.js') }}"></script>
+</body>
+</html>

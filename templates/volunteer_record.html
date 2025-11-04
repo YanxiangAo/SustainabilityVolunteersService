@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Hours Record - Sustainable Volunteer Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container header-content">
+            <a href="/participant/dashboard" class="btn btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                    <line x1="19" y1="12" x2="5" y2="12"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Back to Dashboard
+            </a>
+            <button class="btn btn-outline">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export Records
+            </button>
+        </div>
+    </header>
+
+    <div class="container py-8">
+        <!-- Page Title -->
+        <div class="mb-8">
+            <h1>Volunteer Hours Record</h1>
+            <p class="text-gray-600">View all your volunteer service records and points</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-3 mb-8">
+            <div class="card">
+                <div class="card-content">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Total Hours</p>
+                            <p style="font-size: 2rem; color: var(--primary-green);">24.5h</p>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green); opacity: 0.2;">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Total Points</p>
+                            <p style="font-size: 2rem; color: var(--secondary-blue);">490</p>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue); opacity: 0.2;">
+                            <circle cx="12" cy="8" r="7"/>
+                            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-content">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Completed Projects</p>
+                            <p style="font-size: 2rem; color: var(--accent-purple);">6</p>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple); opacity: 0.2;">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-6">
+            <div class="card-content">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                        </svg>
+                        <span class="text-sm text-gray-600">Filter:</span>
+                    </div>
+                    <select style="width: 10rem;">
+                        <option>All Years</option>
+                        <option>2025</option>
+                        <option>2024</option>
+                    </select>
+                    <select style="width: 10rem;">
+                        <option>All Categories</option>
+                        <option>Environmental</option>
+                        <option>Education</option>
+                        <option>Care</option>
+                    </select>
+                    <button class="btn btn-ghost btn-sm">Clear Filters</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Records Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3 style="margin: 0;">Record Details</h3>
+            </div>
+            <div class="card-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Category</th>
+                            <th>Organization</th>
+                            <th>Date</th>
+                            <th>Certified Hours</th>
+                            <th>Points Earned</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Community Waste Sorting Campaign</td>
+                            <td><span class="badge badge-primary">Environmental</span></td>
+                            <td class="text-sm text-gray-600">Green Earth Environmental</td>
+                            <td>2025-10-30</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>4h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">80</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Digital Skills Training for Seniors</td>
+                            <td><span class="badge badge-blue">Education</span></td>
+                            <td class="text-sm text-gray-600">Silver Age Mutual Aid</td>
+                            <td>2025-10-28</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>3h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">60</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Urban Greening Planting Project</td>
+                            <td><span class="badge badge-primary">Environmental</span></td>
+                            <td class="text-sm text-gray-600">Youth Volunteer Association</td>
+                            <td>2025-10-25</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>5h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">100</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Companion Program for Left-behind Children</td>
+                            <td><span class="badge" style="background-color: #fce7f3; color: #831843;">Care</span></td>
+                            <td class="text-sm text-gray-600">Love Bridge Foundation</td>
+                            <td>2025-10-20</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>6h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">120</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Community Book Donation</td>
+                            <td><span class="badge badge-blue">Education</span></td>
+                            <td class="text-sm text-gray-600">Book Community Foundation</td>
+                            <td>2025-10-15</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>2h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">40</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                        <tr>
+                            <td>Beach Cleanup Action</td>
+                            <td><span class="badge badge-primary">Environmental</span></td>
+                            <td class="text-sm text-gray-600">Blue Ocean Protection</td>
+                            <td>2025-10-10</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>4.5h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">90</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-success">Certified</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card mt-6">
+            <div class="card-content">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">
+                            Showing 6 records, totaling 24.5 hours and 490 points
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            You have completed 6 volunteer projects. Keep up the great work!
+                        </p>
+                    </div>
+                    <button class="btn btn-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export Current Results
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

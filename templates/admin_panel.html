@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Sustainable Volunteer Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background-color: var(--gray-50);">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="flex items-center gap-2 mb-2">
+                <div style="width: 3rem; height: 3rem; background-color: #f3e8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple);">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div>Administrator</div>
+                    <div class="text-sm text-gray-500">System Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="project-review">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <polyline points="9 15 11 17 15 13"/>
+                </svg>
+                <span>Project Review</span>
+            </button>
+            <button class="nav-item" data-tab="hours-review">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Hours Review</span>
+            </button>
+            <button class="nav-item" data-tab="user-management">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>User Management</span>
+            </button>
+            <button class="nav-item" data-tab="settings">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"/>
+                </svg>
+                <span>System Settings</span>
+            </button>
+        </nav>
+
+        <div style="position: absolute; bottom: 0; width: 16rem; padding: 1rem; border-top: 1px solid var(--gray-200);">
+            <a href="/logout" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Project Review Tab -->
+        <div class="tab-content active" id="project-review-tab">
+            <div class="mb-8">
+                <h2>Project Review</h2>
+                <p class="text-gray-600">Review volunteer projects submitted by organizations</p>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 style="margin: 0;">Rural Teaching Support Activity</h3>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="badge badge-orange">Pending Review</span>
+                                <span class="text-sm text-gray-600">Hope Light Education Foundation · Submitted 2025-11-02</span>
+                            </div>
+                        </div>
+                        <div class="sustainability-rating rating-high">
+                            <div class="stars">
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                <svg class="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-cols-3 gap-4 mb-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Activity Date: </span>
+                            <span>2025-11-28</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Expected Participants: </span>
+                            <span>20 people</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Sustainability Rating: </span>
+                            <span>4.2/5.0</span>
+                        </div>
+                    </div>
+
+                    <div style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                        <p class="text-sm text-gray-700 mb-2">Project Description:</p>
+                        <p class="text-sm text-gray-600">
+                            This project aims to provide quality educational resources to rural children through teaching support activities, helping them broaden their horizons and cultivate learning interests. The activity will last one week, with volunteers teaching Chinese, Math, English and organizing extracurricular activities.
+                        </p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Approve
+                        </button>
+                        <button class="btn" style="background-color: #ef4444; color: white;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            Reject
+                        </button>
+                        <button class="btn btn-outline">View Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hours Review Tab -->
+        <div class="tab-content" id="hours-review-tab">
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h2>Hours Review</h2>
+                    <p class="text-gray-600">Review and certify volunteer service hours</p>
+                </div>
+                <button class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Batch Approve (0)
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 3rem;">
+                                    <input type="checkbox" style="width: 1rem; height: 1rem;">
+                                </th>
+                                <th>Participant</th>
+                                <th>Project Name</th>
+                                <th>Organization</th>
+                                <th>Hours</th>
+                                <th>Points</th>
+                                <th>Completion Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="checkbox" style="width: 1rem; height: 1rem;"></td>
+                                <td>John Smith</td>
+                                <td>Community Waste Sorting Campaign</td>
+                                <td class="text-sm text-gray-600">Green Earth Environmental</td>
+                                <td><span class="badge badge-secondary">4h</span></td>
+                                <td><span class="badge badge-blue">80 pts</span></td>
+                                <td class="text-sm text-gray-600">2025-10-30</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            Approve
+                                        </button>
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                            Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" style="width: 1rem; height: 1rem;"></td>
+                                <td>Emma Wilson</td>
+                                <td>Digital Skills Training for Seniors</td>
+                                <td class="text-sm text-gray-600">Silver Age Mutual Aid</td>
+                                <td><span class="badge badge-secondary">3h</span></td>
+                                <td><span class="badge badge-blue">60 pts</span></td>
+                                <td class="text-sm text-gray-600">2025-10-28</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            Approve
+                                        </button>
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                            Reject
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Tab -->
+        <div class="tab-content" id="user-management-tab">
+            <div class="mb-8">
+                <h2>User Management</h2>
+                <p class="text-gray-600">Manage all platform users</p>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Type</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Smith</td>
+                                <td><span class="badge badge-secondary">Participant</span></td>
+                                <td class="text-sm text-gray-600">john@example.com</td>
+                                <td><span class="badge badge-success">Active</span></td>
+                                <td class="text-sm text-gray-600">2025-01-15</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-outline btn-sm">View</button>
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Green Earth Environmental</td>
+                                <td><span class="badge badge-secondary" style="background-color: #dbeafe; color: var(--secondary-blue);">Organization</span></td>
+                                <td class="text-sm text-gray-600">green@example.com</td>
+                                <td><span class="badge badge-success">Active</span></td>
+                                <td class="text-sm text-gray-600">2024-12-01</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button class="btn btn-outline btn-sm">View</button>
+                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings-tab">
+            <div class="mb-8">
+                <h2>System Settings</h2>
+                <p class="text-gray-600">Configure platform parameters and rules</p>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Points Rules</h3>
+                    <p class="text-sm text-gray-600 mt-1">Set the conversion ratio between volunteer hours and points</p>
+                </div>
+                <div class="card-content">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="text-sm">1 hour volunteer service = </span>
+                        <input type="number" value="20" style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <span class="text-sm">points</span>
+                    </div>
+                    <button class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Review Settings</h3>
+                    <p class="text-sm text-gray-600 mt-1">Configure project and hours review rules</p>
+                </div>
+                <div class="card-content">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm">Auto-approve hour records under 3 hours</span>
+                        <input type="checkbox" style="width: 1.25rem; height: 1.25rem;">
+                    </div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-sm">Project publication requires admin review</span>
+                        <input type="checkbox" checked style="width: 1.25rem; height: 1.25rem;">
+                    </div>
+                    <button class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+            item.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabName + '-tab').classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
