@@ -102,7 +102,76 @@ def admin_panel():
 @bp.route('/project/<int:project_id>')
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
-    return render_template('project_detail.html', project=project)
+    # Get organization info
+    organization = User.query.get(project.organization_id)
+    # Get registration count
+    registration_count = Registration.query.filter_by(project_id=project.id).count()
+    # Get comments/registrations for display
+    registrations = Registration.query.filter_by(project_id=project.id).limit(5).all()
+    
+    return render_template('project_detail.html', 
+                         project=project, 
+                         organization=organization,
+                         registration_count=registration_count,
+                         registrations=registrations)
+
+@bp.route('/demo/project')
+def demo_project_detail():
+    """Demo route showing project detail page with mock data"""
+    from datetime import date, timedelta
+    
+    # Create mock data
+    # Create a mock project object with all required attributes
+    class MockProject:
+        def __init__(self):
+            self.id = 1
+            self.title = 'Community Waste Sorting Campaign'
+            self.description = 'This activity aims to raise community residents\' environmental awareness and promote waste sorting knowledge. Volunteers will help residents understand the importance and correct methods of waste sorting through distributing brochures, on-site explanations, and interactive games. The activity will cover multiple communities, contributing to building a beautiful home.'
+            self.category = 'Environmental'
+            self.date = date(2025, 11, 15)
+            self.location = 'Sunshine Community Activity Center'
+            self.max_participants = 20
+            self.duration = 4.0
+            self.points = 80
+            self.rating = 4.8
+            self.status = 'approved'
+            self.requirements = 'Love environmental protection, have good communication skills, and be able to participate in the entire activity'
+    
+    mock_project = MockProject()
+    
+    # Create a mock organization object
+    class MockOrganization:
+        def __init__(self):
+            self.username = 'Green Earth Environmental'
+            self.description = 'Dedicated to environmental advocacy and practice, has conducted over 100 environmental activities'
+    
+    mock_organization = MockOrganization()
+    
+    # Mock registration data
+    mock_registration_count = 15
+    mock_comments = [
+        {
+            'user_name': 'Emma Wilson',
+            'user_type': 'Participant',
+            'comment': 'Very meaningful activity, looking forward to participating! Do I need to bring my own promotional materials?',
+            'created_at': '2025-11-03 10:30',
+            'reply': 'The organization will provide brochures and other materials. Just arrive on time.'
+        },
+        {
+            'user_name': 'Michael Chen',
+            'user_type': 'Participant',
+            'comment': 'Participated in similar activities before, learned a lot. How long will this activity last?',
+            'created_at': '2025-11-02 15:20',
+            'reply': 'The activity is expected to last 4 hours, from 9:00 AM to 1:00 PM.'
+        }
+    ]
+    
+    return render_template('project_detail.html',
+                         project=mock_project,
+                         organization=mock_organization,
+                         registration_count=mock_registration_count,
+                         comments=mock_comments,
+                         is_demo=True)
 
 @bp.route('/volunteer-record')
 def volunteer_record():

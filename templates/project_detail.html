@@ -7,6 +7,28 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+{% macro render_stars(rating, size='20') %}
+    {% set rating_int = rating | int %}
+    {% set rating_decimal = rating - rating_int %}
+    {% set color_class = 'rating-high' if rating >= 4 else ('rating-medium' if rating >= 3 else 'rating-low') %}
+    {% set bg_color = '#dcfce7' if rating >= 4 else ('#fef3c7' if rating >= 3 else '#f3f4f6') %}
+    <div class="sustainability-rating {{ color_class }}">
+        <div class="stars">
+            {% for i in range(1, 6) %}
+                {% if i <= rating_int or (i == rating_int + 1 and rating_decimal >= 0.5) %}
+                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                {% else %}
+                    <svg class="star" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <span class="rating-badge" style="background-color: {{ bg_color }};">{{ "%.1f"|format(rating) }}</span>
+    </div>
+{% endmacro %}
     <!-- Header -->
     <header class="header">
         <div class="container header-content">
@@ -30,38 +52,21 @@
                         <div class="flex items-start justify-between mb-4">
                             <div style="flex: 1;">
                                 <div class="flex items-center gap-3 mb-2">
-                                    <span class="badge badge-primary">Environmental</span>
+                                    <span class="badge badge-primary">{{ project.category }}</span>
+                                    {% if registration_count %}
                                     <span class="badge" style="background-color: #dbeafe; color: var(--secondary-blue);">Registered</span>
+                                    {% endif %}
                                 </div>
-                                <h1 class="mb-3">Community Waste Sorting Campaign</h1>
+                                <h1 class="mb-3">{{ project.title }}</h1>
                                 <div class="flex items-center gap-2 text-gray-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                                     </svg>
-                                    <span>Green Earth Environmental</span>
+                                    <span>{{ organization.username if organization else 'Organization Name' }}</span>
                                     <span class="badge badge-success">Verified</span>
                                 </div>
                             </div>
-                            <div class="sustainability-rating rating-high">
-                                <div class="stars">
-                                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                </div>
-                                <span class="rating-badge" style="background-color: #dcfce7;">4.8</span>
-                            </div>
+                            {{ render_stars(project.rating or 0.0, '20') }}
                         </div>
                     </div>
                 </div>
@@ -75,7 +80,7 @@
                         <div class="mb-6">
                             <h3 class="mb-2">Description</h3>
                             <p class="text-gray-700" style="line-height: 1.8;">
-                                This activity aims to raise community residents' environmental awareness and promote waste sorting knowledge. Volunteers will help residents understand the importance and correct methods of waste sorting through distributing brochures, on-site explanations, and interactive games. The activity will cover multiple communities, contributing to building a beautiful home.
+                                {{ project.description }}
                             </p>
                         </div>
 
@@ -88,7 +93,7 @@
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Activity Date</div>
-                                    <div>2025-11-15</div>
+                                    <div>{{ project.date.strftime('%Y-%m-%d') if project.date else 'TBD' }}</div>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
@@ -98,7 +103,7 @@
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Duration</div>
-                                    <div>4 hours</div>
+                                    <div>{{ project.duration }} hours</div>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
@@ -108,7 +113,7 @@
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Location</div>
-                                    <div>Sunshine Community Activity Center</div>
+                                    <div>{{ project.location }}</div>
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
@@ -118,14 +123,20 @@
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Volunteer Points</div>
-                                    <div>80 points</div>
+                                    <div>{{ project.points }} points</div>
                                 </div>
                             </div>
                         </div>
 
                         <div>
                             <h3 class="mb-2">Requirements</h3>
-                            <p class="text-gray-700">Love environmental protection, have good communication skills, and be able to participate in the entire activity</p>
+                            <p class="text-gray-700">
+                                {% if project.requirements %}
+                                    {{ project.requirements }}
+                                {% else %}
+                                    No specific requirements listed.
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -151,41 +162,31 @@
 
                         <!-- Comments List -->
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span>Emma Wilson</span>
-                                    <span class="badge badge-secondary text-xs">Participant</span>
-                                    <span class="text-xs text-gray-500">2025-11-03 10:30</span>
-                                </div>
-                                <p class="text-gray-700 mb-2">Very meaningful activity, looking forward to participating! Do I need to bring my own promotional materials?</p>
-                                <div style="background-color: #eff6ff; padding: 0.75rem; border-radius: var(--border-radius); margin-top: 0.5rem;">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                        </svg>
-                                        <span class="text-sm" style="color: var(--secondary-blue);">Organization Reply:</span>
+                            {% if comments %}
+                                {% for comment in comments %}
+                                <div style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span>{{ comment.user_name }}</span>
+                                        <span class="badge badge-secondary text-xs">{{ comment.user_type }}</span>
+                                        <span class="text-xs text-gray-500">{{ comment.created_at }}</span>
                                     </div>
-                                    <p class="text-sm text-gray-700">The organization will provide brochures and other materials. Just arrive on time.</p>
-                                </div>
-                            </div>
-
-                            <div style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span>Michael Chen</span>
-                                    <span class="badge badge-secondary text-xs">Participant</span>
-                                    <span class="text-xs text-gray-500">2025-11-02 15:20</span>
-                                </div>
-                                <p class="text-gray-700 mb-2">Participated in similar activities before, learned a lot. How long will this activity last?</p>
-                                <div style="background-color: #eff6ff; padding: 0.75rem; border-radius: var(--border-radius); margin-top: 0.5rem;">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                        </svg>
-                                        <span class="text-sm" style="color: var(--secondary-blue);">Organization Reply:</span>
+                                    <p class="text-gray-700 mb-2">{{ comment.comment }}</p>
+                                    {% if comment.reply %}
+                                    <div style="background-color: #eff6ff; padding: 0.75rem; border-radius: var(--border-radius); margin-top: 0.5rem;">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                            </svg>
+                                            <span class="text-sm" style="color: var(--secondary-blue);">Organization Reply:</span>
+                                        </div>
+                                        <p class="text-sm text-gray-700">{{ comment.reply }}</p>
                                     </div>
-                                    <p class="text-sm text-gray-700">The activity is expected to last 4 hours, from 9:00 AM to 1:00 PM.</p>
+                                    {% endif %}
                                 </div>
-                            </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-gray-500 text-center py-4">No comments yet. Be the first to ask a question!</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -198,10 +199,11 @@
                     <div class="card-content">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-gray-600">Registered</span>
-                            <span>15/20</span>
+                            <span>{{ registration_count or 0 }}/{{ project.max_participants }}</span>
                         </div>
                         <div class="progress-bar mb-4">
-                            <div class="progress-fill" style="width: 75%;"></div>
+                            {% set progress = ((registration_count or 0) / project.max_participants * 100) | round(0) | int %}
+                            <div class="progress-fill" style="width: {{ progress }}%;"></div>
                         </div>
                         <button class="btn btn-primary" style="width: 100%;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
@@ -224,9 +226,15 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             </svg>
-                            <span>Green Earth Environmental</span>
+                            <span>{{ organization.username if organization else 'Organization Name' }}</span>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Dedicated to environmental advocacy and practice, has conducted over 100 environmental activities</p>
+                        <p class="text-sm text-gray-600 mb-4">
+                            {% if organization and organization.description %}
+                                {{ organization.description }}
+                            {% else %}
+                                Organization description not available.
+                            {% endif %}
+                        </p>
                         <button class="btn btn-outline" style="width: 100%;">View More Projects</button>
                     </div>
                 </div>
@@ -244,26 +252,7 @@
                         </h3>
                     </div>
                     <div class="card-content">
-                        <div class="sustainability-rating rating-high mb-3">
-                            <div class="stars">
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                </svg>
-                            </div>
-                            <span class="rating-badge" style="background-color: #dcfce7;">4.8</span>
-                        </div>
+                        <div class="mb-3">{{ render_stars(project.rating or 0.0, '16') }}</div>
                         <p class="text-sm text-gray-600 mb-4">
                             This project aligns with the UN Sustainable Development Goals (SDGs), having positive impacts on environmental protection and social development.
                         </p>

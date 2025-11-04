@@ -96,7 +96,7 @@ http://localhost:5000
 
 ### Database Schema Diagram
 
-![Database Schema](images/database_schame.png)
+![Database Schema](images/database_schema.png)
 
 This Entity-Relationship (ER) diagram illustrates the complete database structure with four main tables:
 
