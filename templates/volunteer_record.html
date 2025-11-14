@@ -42,7 +42,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-600 mb-1">Total Hours</p>
-                            <p style="font-size: 2rem; color: var(--primary-green);">24.5h</p>
+                            <p style="font-size: 2rem; color: var(--primary-green);">{{ "%.1f"|format(total_hours) }}h</p>
                         </div>
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green); opacity: 0.2;">
                             <circle cx="12" cy="12" r="10"/>
@@ -56,7 +56,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-600 mb-1">Total Points</p>
-                            <p style="font-size: 2rem; color: var(--secondary-blue);">490</p>
+                            <p style="font-size: 2rem; color: var(--secondary-blue);">{{ total_points }}</p>
                         </div>
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue); opacity: 0.2;">
                             <circle cx="12" cy="8" r="7"/>
@@ -70,7 +70,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-gray-600 mb-1">Completed Projects</p>
-                            <p style="font-size: 2rem; color: var(--accent-purple);">6</p>
+                            <p style="font-size: 2rem; color: var(--accent-purple);">{{ completed_count }}</p>
                         </div>
                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple); opacity: 0.2;">
                             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -90,18 +90,19 @@
                         </svg>
                         <span class="text-sm text-gray-600">Filter:</span>
                     </div>
-                    <select style="width: 10rem;">
-                        <option>All Years</option>
-                        <option>2025</option>
-                        <option>2024</option>
+                    <select id="year-filter" style="width: 10rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <option value="">All Years</option>
+                        {% for year in available_years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
                     </select>
-                    <select style="width: 10rem;">
-                        <option>All Categories</option>
-                        <option>Environmental</option>
-                        <option>Education</option>
-                        <option>Care</option>
+                    <select id="category-filter" style="width: 10rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <option value="">All Categories</option>
+                        {% for category in available_categories %}
+                            <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
                     </select>
-                    <button class="btn btn-ghost btn-sm">Clear Filters</button>
+                    <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear Filters</button>
                 </div>
             </div>
         </div>
@@ -124,157 +125,83 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Community Waste Sorting Campaign</td>
-                            <td><span class="badge badge-primary">Environmental</span></td>
-                            <td class="text-sm text-gray-600">Green Earth Environmental</td>
-                            <td>2025-10-30</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>4h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">80</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
-                        <tr>
-                            <td>Digital Skills Training for Seniors</td>
-                            <td><span class="badge badge-blue">Education</span></td>
-                            <td class="text-sm text-gray-600">Silver Age Mutual Aid</td>
-                            <td>2025-10-28</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>3h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">60</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
-                        <tr>
-                            <td>Urban Greening Planting Project</td>
-                            <td><span class="badge badge-primary">Environmental</span></td>
-                            <td class="text-sm text-gray-600">Youth Volunteer Association</td>
-                            <td>2025-10-25</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>5h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">100</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
-                        <tr>
-                            <td>Companion Program for Left-behind Children</td>
-                            <td><span class="badge" style="background-color: #fce7f3; color: #831843;">Care</span></td>
-                            <td class="text-sm text-gray-600">Love Bridge Foundation</td>
-                            <td>2025-10-20</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>6h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">120</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
-                        <tr>
-                            <td>Community Book Donation</td>
-                            <td><span class="badge badge-blue">Education</span></td>
-                            <td class="text-sm text-gray-600">Book Community Foundation</td>
-                            <td>2025-10-15</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>2h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">40</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
-                        <tr>
-                            <td>Beach Cleanup Action</td>
-                            <td><span class="badge badge-primary">Environmental</span></td>
-                            <td class="text-sm text-gray-600">Blue Ocean Protection</td>
-                            <td>2025-10-10</td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <polyline points="12 6 12 12 16 14"/>
-                                    </svg>
-                                    <span>4.5h</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                        <circle cx="12" cy="8" r="7"/>
-                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-                                    </svg>
-                                    <span style="color: var(--secondary-blue);">90</span>
-                                </div>
-                            </td>
-                            <td><span class="badge badge-success">Certified</span></td>
-                        </tr>
+                    <tbody id="records-tbody">
+                        {% if records_data %}
+                            {% for item in records_data %}
+                                {% set record = item.record %}
+                                {% set project = item.project %}
+                                {% set organization = item.organization %}
+                                <tr>
+                                    <td>
+                                        {% if project and project.id %}
+                                            <a href="/project/{{ project.id }}" style="color: inherit; text-decoration: none;">{{ project.title }}</a>
+                                        {% else %}
+                                            Unknown Project
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project and project.category %}
+                                            {% if project.category == 'Environmental' %}
+                                                <span class="badge badge-primary">Environmental</span>
+                                            {% elif project.category == 'Education' %}
+                                                <span class="badge badge-blue">Education</span>
+                                            {% elif project.category == 'Care' %}
+                                                <span class="badge" style="background-color: #fce7f3; color: #831843;">Care</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">{{ project.category }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge badge-secondary">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-sm text-gray-600">
+                                        {% if organization %}
+                                            {{ organization.display_name or organization.username }}
+                                        {% else %}
+                                            Unknown Organization
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.completed_at %}
+                                            {{ record.completed_at }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                            <span>{{ "%.1f"|format(record.hours) }}h</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                                <circle cx="12" cy="8" r="7"/>
+                                                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                            </svg>
+                                            <span style="color: var(--secondary-blue);">{{ record.points }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if record.status == 'approved' %}
+                                            <span class="badge badge-success">Certified</span>
+                                        {% elif record.status == 'pending' %}
+                                            <span class="badge badge-orange">Pending</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{{ record.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-gray-500 py-8">No volunteer records found.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -286,10 +213,14 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm text-gray-600">
-                            Showing 6 records, totaling 24.5 hours and 490 points
+                            Showing {{ records_data|length }} record{{ 's' if records_data|length != 1 else '' }}, totaling {{ "%.1f"|format(total_hours) }} hours and {{ total_points }} points
                         </p>
                         <p class="text-xs text-gray-500 mt-1">
-                            You have completed 6 volunteer projects. Keep up the great work!
+                            {% if completed_count > 0 %}
+                                You have completed {{ completed_count }} volunteer project{{ 's' if completed_count != 1 else '' }}. Keep up the great work!
+                            {% else %}
+                                Start volunteering to earn hours and points!
+                            {% endif %}
                         </p>
                     </div>
                     <button class="btn btn-outline">
@@ -304,5 +235,137 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // Store original records data for filtering
+        const allRecords = {{ records_data|tojson|safe }};
+        
+        function filterRecords() {
+            const yearFilter = document.getElementById('year-filter').value;
+            const categoryFilter = document.getElementById('category-filter').value;
+            const tbody = document.getElementById('records-tbody');
+            
+            if (!tbody) return;
+            
+            let filtered = allRecords;
+            
+            if (yearFilter) {
+                filtered = filtered.filter(item => {
+                    if (!item.record.completed_at) return false;
+                    const year = item.record.completed_at.split('-')[0];
+                    return year === yearFilter;
+                });
+            }
+            
+            if (categoryFilter) {
+                filtered = filtered.filter(item => {
+                    return item.project && item.project.category === categoryFilter;
+                });
+            }
+            
+            // Re-render table
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-8">No records match the selected filters.</td></tr>';
+            } else {
+                tbody.innerHTML = filtered.map(item => {
+                    const record = item.record;
+                    const project = item.project;
+                    const organization = item.organization;
+                    
+                    const categoryBadge = project ? (
+                        project.category === 'Environmental' ? '<span class="badge badge-primary">Environmental</span>' :
+                        project.category === 'Education' ? '<span class="badge badge-blue">Education</span>' :
+                        project.category === 'Care' ? '<span class="badge" style="background-color: #fce7f3; color: #831843;">Care</span>' :
+                        `<span class="badge badge-secondary">${project.category}</span>`
+                    ) : '<span class="badge badge-secondary">N/A</span>';
+                    
+                    const statusBadge = record.status === 'approved' ? 
+                        '<span class="badge badge-success">Certified</span>' :
+                        record.status === 'pending' ?
+                        '<span class="badge badge-orange">Pending</span>' :
+                        `<span class="badge badge-secondary">${record.status}</span>`;
+                    
+                    const completedDate = record.completed_at || 'N/A';
+                    
+                    const projectLink = project && project.id ? 
+                        `<a href="/project/${project.id}" style="color: inherit; text-decoration: none;">${project.title}</a>` :
+                        'Unknown Project';
+                    
+                    const orgName = organization ? 
+                        (organization.display_name || organization.username) : 
+                        'Unknown Organization';
+                    
+                    return `
+                        <tr>
+                            <td>${projectLink}</td>
+                            <td>${categoryBadge}</td>
+                            <td class="text-sm text-gray-600">${orgName}</td>
+                            <td>${completedDate}</td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span>${record.hours.toFixed(1)}h</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
+                                        <circle cx="12" cy="8" r="7"/>
+                                        <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                    </svg>
+                                    <span style="color: var(--secondary-blue);">${record.points}</span>
+                                </div>
+                            </td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            
+            // Update summary
+            const filteredHours = filtered.reduce((sum, item) => {
+                return sum + (item.record.status === 'approved' ? item.record.hours : 0);
+            }, 0);
+            const filteredPoints = filtered.reduce((sum, item) => {
+                return sum + (item.record.status === 'approved' ? item.record.points : 0);
+            }, 0);
+            const filteredCompleted = filtered.filter(item => item.record.status === 'approved').length;
+            
+            const summaryText = document.querySelector('.card.mt-6 .text-sm.text-gray-600');
+            const summarySubtext = document.querySelector('.card.mt-6 .text-xs.text-gray-500');
+            
+            if (summaryText) {
+                summaryText.textContent = `Showing ${filtered.length} record${filtered.length !== 1 ? 's' : ''}, totaling ${filteredHours.toFixed(1)} hours and ${filteredPoints} points`;
+            }
+            if (summarySubtext) {
+                if (filteredCompleted > 0) {
+                    summarySubtext.textContent = `You have completed ${filteredCompleted} volunteer project${filteredCompleted !== 1 ? 's' : ''}. Keep up the great work!`;
+                } else {
+                    summarySubtext.textContent = 'Start volunteering to earn hours and points!';
+                }
+            }
+        }
+        
+        function clearFilters() {
+            document.getElementById('year-filter').value = '';
+            document.getElementById('category-filter').value = '';
+            filterRecords();
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const yearFilter = document.getElementById('year-filter');
+            const categoryFilter = document.getElementById('category-filter');
+            
+            if (yearFilter) {
+                yearFilter.addEventListener('change', filterRecords);
+            }
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterRecords);
+            }
+        });
+    </script>
 </body>
 </html>

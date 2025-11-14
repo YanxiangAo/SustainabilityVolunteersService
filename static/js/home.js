@@ -1,51 +1,3 @@
-// Sample project data
-const projects = [
-    {
-        id: 1,
-        title: "Community Waste Sorting Campaign",
-        organization: "Green Earth Environmental",
-        date: "2025-11-15",
-        location: "Sunshine Community",
-        participants: 15,
-        maxParticipants: 20,
-        rating: 4.8,
-        category: "Environmental"
-    },
-    {
-        id: 2,
-        title: "Digital Skills Training for Seniors",
-        organization: "Silver Age Mutual Aid",
-        date: "2025-11-20",
-        location: "City Library",
-        participants: 8,
-        maxParticipants: 10,
-        rating: 4.5,
-        category: "Education"
-    },
-    {
-        id: 3,
-        title: "Urban Greening Planting Project",
-        organization: "Youth Volunteer Association",
-        date: "2025-11-25",
-        location: "City Park",
-        participants: 25,
-        maxParticipants: 30,
-        rating: 4.9,
-        category: "Environmental"
-    },
-    {
-        id: 4,
-        title: "Companion Program for Left-behind Children",
-        organization: "Love Bridge Foundation",
-        date: "2025-12-01",
-        location: "Hope Elementary School",
-        participants: 12,
-        maxParticipants: 15,
-        rating: 4.7,
-        category: "Care"
-    }
-];
-
 // Render sustainability rating
 function renderRating(rating) {
     const colorClass = rating < 3 ? 'rating-low' : rating < 4 ? 'rating-medium' : 'rating-high';
@@ -80,7 +32,7 @@ function renderProjectCard(project) {
                     ${renderRating(project.rating)}
                 </div>
                 <h3 style="margin-bottom: 0.5rem;">${project.title}</h3>
-                <p class="text-sm text-gray-600">${project.organization}</p>
+                <p class="text-sm text-gray-600">${project.organization_name ?? ''}</p>
             </div>
             <div class="card-content">
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem; color: var(--gray-600);">
@@ -106,7 +58,7 @@ function renderProjectCard(project) {
                             <circle cx="9" cy="7" r="4"/>
                             <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
-                        ${project.participants}/${project.maxParticipants} registered
+                        ${project.current_participants}/${project.max_participants} registered
                     </div>
                 </div>
                 <button class="btn btn-primary" style="width: 100%;">View Details</button>
@@ -115,10 +67,29 @@ function renderProjectCard(project) {
     `;
 }
 
+async function fetchProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        if (!response.ok) {
+            throw new Error('Failed to load projects');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+}
+
 // Load projects on page load
 document.addEventListener('DOMContentLoaded', function() {
     const projectsGrid = document.getElementById('projects-grid');
     if (projectsGrid) {
-        projectsGrid.innerHTML = projects.map(project => renderProjectCard(project)).join('');
+        fetchProjects().then(projects => {
+            if (!projects.length) {
+                projectsGrid.innerHTML = '<p class="text-gray-500 text-center py-8">No approved projects are available at the moment.</p>';
+                return;
+            }
+            projectsGrid.innerHTML = projects.map(project => renderProjectCard(project)).join('');
+        });
     }
 });

@@ -62,7 +62,7 @@
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                                     </svg>
-                                    <span>{{ organization.username if organization else 'Organization Name' }}</span>
+                                    <span>{{ (organization.display_name or organization.username) if organization else 'Organization Name' }}</span>
                                     <span class="badge badge-success">Verified</span>
                                 </div>
                             </div>
@@ -150,8 +150,8 @@
                     <div class="card-content">
                         <!-- Comment Input -->
                         <div class="mb-6">
-                            <textarea placeholder="Feel free to leave any questions here..." rows="3" style="margin-bottom: 0.75rem;"></textarea>
-                            <button class="btn btn-primary">
+                            <textarea id="comment-text" placeholder="Feel free to leave any questions here..." rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
+                            <button class="btn btn-primary" onclick="submitComment({{ project.id }})">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                                     <line x1="22" y1="2" x2="11" y2="13"/>
                                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -205,7 +205,15 @@
                             {% set progress = ((registration_count or 0) / project.max_participants * 100) | round(0) | int %}
                             <div class="progress-fill" style="width: {{ progress }}%;"></div>
                         </div>
-                        <button class="btn btn-primary" style="width: 100%;">
+                        {% if is_registered %}
+                        <button class="btn" id="register-btn" style="width: 100%; background-color: #dcfce7; color: var(--primary-green);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Already Registered
+                        </button>
+                        {% else %}
+                        <button class="btn btn-primary" id="register-btn" style="width: 100%;" onclick="registerForProject({{ project.id }})">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                                 <circle cx="9" cy="7" r="4"/>
@@ -213,6 +221,7 @@
                             </svg>
                             Register Now
                         </button>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -226,7 +235,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             </svg>
-                            <span>{{ organization.username if organization else 'Organization Name' }}</span>
+                            <span>{{ (organization.display_name or organization.username) if organization else 'Organization Name' }}</span>
                         </div>
                         <p class="text-sm text-gray-600 mb-4">
                             {% if organization and organization.description %}
@@ -275,5 +284,77 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        async function registerForProject(projectId) {
+            const btn = document.getElementById('register-btn');
+            if (!btn) return;
+            
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+            
+            try {
+                const response = await fetch('/api/register-project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ project_id: projectId })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Successfully registered for this project!');
+                    btn.textContent = 'Registered';
+                    btn.disabled = true;
+                    btn.style.backgroundColor = '#dcfce7';
+                    btn.style.color = 'var(--primary-green)';
+                    // Reload page to update registration count
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to register'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Register Now';
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error registering for project. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Register Now';
+            }
+        }
+        
+        async function submitComment(projectId) {
+            const textarea = document.getElementById('comment-text');
+            if (!textarea) return;
+            
+            const comment = textarea.value.trim();
+            if (!comment) {
+                alert('Please enter a comment.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/project/${projectId}/comment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ comment: comment })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('Comment submitted! (Note: Full comment system requires Comment model implementation)');
+                    textarea.value = '';
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to submit comment'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error submitting comment. Please try again.');
+            }
+        }
+    </script>
 </body>
 </html>

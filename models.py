@@ -1,5 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from sqlalchemy.orm import relationship
+from sqlalchemy import UniqueConstraint
 
 # SQLAlchemy instance to be initialized in app factory
 db = SQLAlchemy()
@@ -11,7 +13,14 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     user_type = db.Column(db.String(20), nullable=False)  # participant, organization, admin
+    display_name = db.Column(db.String(120))
+    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    projects = relationship('Project', backref='organization', lazy=True)
+    registrations = relationship('Registration', backref='user', lazy=True)
+    volunteer_records = relationship('VolunteerRecord', backref='user', lazy=True)
+    badge_awards = relationship('UserBadge', backref='user', lazy=True)
     
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -35,6 +44,10 @@ class Project(db.Model):
     rating = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='pending')  # pending, approved, in_progress, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    requirements = db.Column(db.Text)
+    
+    registrations = relationship('Registration', backref='project', lazy=True)
+    volunteer_records = relationship('VolunteerRecord', backref='project', lazy=True)
 
 class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,3 +64,29 @@ class VolunteerRecord(db.Model):
     points = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, approved
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Badge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    accent_color = db.Column(db.String(20))
+    background_color = db.Column(db.String(20))
+    icon = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user_badges = relationship('UserBadge', backref='badge', lazy=True)
+
+
+class UserBadge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    badge_id = db.Column(db.Integer, db.ForeignKey('badge.id'), nullable=False)
+    earned = db.Column(db.Boolean, default=False)
+    earned_at = db.Column(db.DateTime)
+    progress = db.Column(db.Float, default=0.0)
+    
+    __table_args__ = (
+        UniqueConstraint('user_id', 'badge_id', name='uq_user_badge'),
+    )
