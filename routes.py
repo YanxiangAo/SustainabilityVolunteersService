@@ -1,6 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app, send_file
 from sqlalchemy import or_
-from datetime import datetime
+from datetime import datetime, timedelta
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
 
 from models import db, User, Project, Registration, VolunteerRecord, Badge, UserBadge
 from forms import parse_login_form, parse_register_form
@@ -223,10 +226,143 @@ def volunteer_record():
                          available_years=sorted(years_set, reverse=True),
                          available_categories=sorted(categories_set))
 
+
+def _generate_excel_from_records(records, filename_prefix="volunteer_records", user_display_name=None):
+    """Helper function to generate Excel file from VolunteerRecord list."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Volunteer Records"
+    
+    # Header row
+    headers = ['Project Name', 'Category', 'Organization', 'Date', 'Certified Hours', 'Points Earned', 'Status']
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Data rows
+    for row_idx, record in enumerate(records, start=2):
+        project = record.project
+        organization = project.organization if project else None
+        
+        ws.cell(row=row_idx, column=1, value=project.title if project else 'Unknown Project')
+        ws.cell(row=row_idx, column=2, value=project.category if project else 'N/A')
+        ws.cell(row=row_idx, column=3, value=organization.display_name or organization.username if organization else 'Unknown Organization')
+        ws.cell(row=row_idx, column=4, value=record.completed_at.strftime('%Y-%m-%d') if record.completed_at else 'N/A')
+        ws.cell(row=row_idx, column=5, value=record.hours)
+        ws.cell(row=row_idx, column=6, value=record.points)
+        
+        # Status mapping
+        status_display = {
+            'approved': 'Certified',
+            'pending': 'Pending',
+            'rejected': 'Rejected'
+        }
+        ws.cell(row=row_idx, column=7, value=status_display.get(record.status, record.status))
+    
+    # Auto-adjust column widths
+    column_widths = [30, 15, 25, 12, 15, 15, 12]
+    for col_idx, width in enumerate(column_widths, start=1):
+        ws.column_dimensions[ws.cell(row=1, column=col_idx).column_letter].width = width
+    
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # Generate filename with user display_name at the front
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    if user_display_name:
+        # Sanitize display_name for filename (remove invalid characters)
+        safe_name = "".join(c for c in user_display_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        safe_name = safe_name.replace(' ', '_')
+        filename = f"{safe_name}_{filename_prefix}_{timestamp}.xlsx"
+    else:
+        filename = f"{filename_prefix}_{timestamp}.xlsx"
+    
+    return output, filename
+
+
+@bp.route('/api/participant/export-all-records')
+def api_export_all_records():
+    """Export all volunteer records for the current participant."""
+    if 'user_id' not in session or session.get('user_type') != 'participant':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get all records
+    records = VolunteerRecord.query.filter_by(user_id=user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    
+    # Get user display_name (fallback to username if not set)
+    user_display_name = user.display_name or user.username
+    
+    output, filename = _generate_excel_from_records(records, "all_volunteer_records", user_display_name)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@bp.route('/api/participant/export-filtered-records', methods=['POST'])
+def api_export_filtered_records():
+    """Export filtered volunteer records for the current participant."""
+    if 'user_id' not in session or session.get('user_type') != 'participant':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    year_filter = data.get('year')
+    category_filter = data.get('category')
+    
+    # Get all records
+    records = VolunteerRecord.query.filter_by(user_id=user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    
+    # Apply filters
+    filtered_records = []
+    for record in records:
+        # Year filter
+        if year_filter:
+            if not record.completed_at or record.completed_at.year != int(year_filter):
+                continue
+        
+        # Category filter
+        if category_filter:
+            if not record.project or record.project.category != category_filter:
+                continue
+        
+        filtered_records.append(record)
+    
+    # Get user display_name (fallback to username if not set)
+    user_display_name = user.display_name or user.username
+    
+    output, filename = _generate_excel_from_records(filtered_records, "filtered_volunteer_records", user_display_name)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
 # API Routes for AJAX calls
 @bp.route('/api/projects')
 def api_projects():
-    projects = Project.query.filter_by(status='approved').order_by(Project.date.asc()).all()
+    """Get all approved projects (for homepage, exclude expired projects)."""
+    today = datetime.utcnow().date()
+    projects = Project.query.filter_by(status='approved').filter(Project.date >= today).order_by(Project.date.asc()).all()
     return jsonify([{
         'id': p.id,
         'title': p.title,
@@ -240,6 +376,57 @@ def api_projects():
     } for p in projects])
 
 
+@bp.route('/api/participant/available-projects')
+def api_participant_available_projects():
+    """Get available projects for the current participant (filtered)."""
+    if 'user_id' not in session or session.get('user_type') != 'participant':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get all approved projects
+    all_projects = Project.query.filter_by(status='approved').order_by(Project.date.asc()).all()
+    
+    # Get user's existing registrations (both approved and cancelled should be excluded)
+    user_registration_project_ids = {
+        reg.project_id for reg in Registration.query.filter_by(user_id=user.id).all()
+    }
+    
+    today = datetime.utcnow().date()
+    available_projects = []
+    
+    for project in all_projects:
+        # Filter 1: Skip if user has already registered (regardless of status)
+        if project.id in user_registration_project_ids:
+            continue
+        
+        # Filter 2: Skip if project date has passed
+        if project.date < today:
+            continue
+        
+        # Filter 3: Skip if project is full
+        current_participants = sum(1 for r in project.registrations if r.status != 'cancelled')
+        if current_participants >= project.max_participants:
+            continue
+        
+        # Project is available
+        available_projects.append({
+            'id': project.id,
+            'title': project.title,
+            'category': project.category,
+            'date': project.date.strftime('%Y-%m-%d'),
+            'location': project.location,
+            'rating': project.rating,
+            'max_participants': project.max_participants,
+            'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
+            'current_participants': current_participants
+        })
+    
+    return jsonify(available_projects)
+
+
 @bp.route('/api/participant/dashboard-data')
 def api_participant_dashboard_data():
     if 'user_id' not in session or session.get('user_type') != 'participant':
@@ -249,25 +436,7 @@ def api_participant_dashboard_data():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
-    # Recommended projects: upcoming approved projects sorted by date
-    recommended_projects = Project.query.filter(
-        Project.status == 'approved',
-        Project.date >= datetime.utcnow().date()
-    ).order_by(Project.date.asc()).limit(6).all()
-
-    project_payload = []
-    for project in recommended_projects:
-        registrations = [r for r in project.registrations if r.status != 'cancelled']
-        project_payload.append({
-            'id': project.id,
-            'title': project.title,
-            'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
-            'date': project.date.strftime('%Y-%m-%d'),
-            'location': project.location,
-            'rating': project.rating,
-            'current_participants': len(registrations),
-            'max_participants': project.max_participants
-        })
+    # Removed recommended_projects - no longer needed
 
     # Registrations for the user
     user_registrations = Registration.query.filter_by(user_id=user.id).order_by(Registration.created_at.desc()).all()
@@ -331,7 +500,6 @@ def api_participant_dashboard_data():
             'completed': completed_count,
             'upcoming': upcoming_count
         },
-        'recommended_projects': project_payload,
         'registrations': registration_payload,
         'badges': badges_payload
     })
@@ -417,6 +585,30 @@ def api_organization_dashboard_data():
             'rating': project.rating
         })
     
+    # Get recent projects from the last week (created in the last 7 days)
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    recent_projects = Project.query.filter(
+        Project.organization_id == user.id,
+        Project.created_at >= week_ago,
+        Project.status == 'approved'
+    ).order_by(Project.created_at.desc()).limit(8).all()
+    
+    recent_projects_payload = []
+    for project in recent_projects:
+        registrations = Registration.query.filter_by(project_id=project.id).all()
+        recent_projects_payload.append({
+            'id': project.id,
+            'title': project.title,
+            'status': project.status,
+            'date': project.date.strftime('%Y-%m-%d') if project.date else None,
+            'location': project.location,
+            'created_at': project.created_at.strftime('%Y-%m-%d') if project.created_at else None,
+            'current_participants': sum(1 for r in registrations if r.status in active_registration_statuses),
+            'max_participants': project.max_participants,
+            'rating': project.rating,
+            'organization_name': project.organization.display_name or project.organization.username if project.organization else None
+        })
+    
     return jsonify({
         'statistics': {
             'active_projects': active_projects,
@@ -424,7 +616,8 @@ def api_organization_dashboard_data():
             'completed': completed_projects,
             'pending': pending_projects
         },
-        'projects': projects_payload
+        'projects': projects_payload,
+        'recent_projects': recent_projects_payload
     })
 
 @bp.route('/api/organization/registrations/<int:project_id>')
@@ -452,6 +645,96 @@ def api_organization_registrations(project_id):
         'project_title': project.title,
         'registrations': registrations_payload
     })
+
+
+@bp.route('/api/organization/all-registrations')
+def api_organization_all_registrations():
+    """Get all registrations for all projects of the current organization."""
+    if 'user_id' not in session or session.get('user_type') != 'organization':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    # Get all projects for this organization
+    projects = Project.query.filter_by(organization_id=user.id).all()
+    
+    projects_with_registrations = []
+    for project in projects:
+        registrations = Registration.query.filter_by(project_id=project.id).all()
+        registrations_payload = []
+        for reg in registrations:
+            participant = reg.user
+            registrations_payload.append({
+                'id': reg.id,
+                'participant_name': participant.display_name or participant.username,
+                'participant_email': participant.email,
+                'registration_date': reg.created_at.strftime('%Y-%m-%d') if reg.created_at else None,
+                'status': reg.status
+            })
+        
+        projects_with_registrations.append({
+            'project_id': project.id,
+            'project_title': project.title,
+            'project_status': project.status,
+            'registrations': registrations_payload,
+            'total_registrations': len(registrations_payload)
+        })
+    
+    return jsonify({
+        'projects': projects_with_registrations
+    })
+
+def _check_and_auto_complete_project(project):
+    """Check if all participants are completed or cancelled, and auto-complete the project if so."""
+    if project.status == 'completed':
+        return False  # Already completed
+    
+    # Get all registrations for this project
+    all_registrations = Registration.query.filter_by(project_id=project.id).all()
+    
+    if not all_registrations:
+        return False  # No registrations, can't complete
+    
+    # Check if all registrations are either 'completed' or 'cancelled'
+    all_finalized = all(
+        reg.status in ('completed', 'cancelled') 
+        for reg in all_registrations
+    )
+    
+    if not all_finalized:
+        return False  # Not all participants are finalized
+    
+    # Auto-complete the project
+    project.status = 'completed'
+    
+    # Ensure volunteer records exist for completed participants
+    records_created = 0
+    for registration in all_registrations:
+        if registration.status == 'completed':
+            # Check if volunteer record already exists
+            existing_record = VolunteerRecord.query.filter_by(
+                user_id=registration.user_id,
+                project_id=project.id
+            ).first()
+            
+            if not existing_record:
+                # Create volunteer record for confirmed participants
+                volunteer_record = VolunteerRecord(
+                    user_id=registration.user_id,
+                    project_id=project.id,
+                    hours=project.duration,
+                    points=project.points,
+                    status='pending',  # Wait for admin approval
+                    completed_at=datetime.utcnow()
+                )
+                db.session.add(volunteer_record)
+                records_created += 1
+    
+    db.session.commit()
+    return True  # Project was auto-completed
+
 
 @bp.route('/api/organization/registration/<int:registration_id>/status', methods=['POST'])
 def api_organization_update_registration_status(registration_id):
@@ -492,7 +775,85 @@ def api_organization_update_registration_status(registration_id):
             db.session.add(volunteer_record)
     
     db.session.commit()
-    return jsonify({'success': True, 'status': new_status})
+    
+    # Check if project should be auto-completed
+    project_auto_completed = _check_and_auto_complete_project(project)
+    
+    response_data = {
+        'success': True, 
+        'status': new_status
+    }
+    if project_auto_completed:
+        response_data['project_auto_completed'] = True
+        response_data['message'] = 'Registration status updated. Project has been automatically marked as completed since all participants are finalized.'
+    
+    return jsonify(response_data)
+
+
+@bp.route('/api/organization/project/<int:project_id>/complete', methods=['POST'])
+def api_organization_complete_project(project_id):
+    """Mark a project as completed. Only participants with status='completed' will have volunteer records."""
+    if 'user_id' not in session or session.get('user_type') != 'organization':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    project = Project.query.get_or_404(project_id)
+    if project.organization_id != session['user_id']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check if project is already completed
+    if project.status == 'completed':
+        return jsonify({'error': 'Project is already completed'}), 400
+    
+    # Mark project as completed
+    project.status = 'completed'
+    
+    # Get all registrations for this project
+    all_registrations = Registration.query.filter_by(project_id=project.id).all()
+    
+    # For participants who have already been confirmed as completed (status='completed'),
+    # ensure they have volunteer records. Others are marked as not completed (cancelled).
+    completed_registrations = []
+    not_completed_count = 0
+    
+    for registration in all_registrations:
+        if registration.status == 'completed':
+            # These participants have been confirmed as completed
+            completed_registrations.append(registration)
+        else:
+            # Mark all other participants (approved, registered) as not completed (cancelled)
+            if registration.status in ('approved', 'registered'):
+                registration.status = 'cancelled'
+                not_completed_count += 1
+    
+    records_created = 0
+    for registration in completed_registrations:
+        # Check if volunteer record already exists
+        existing_record = VolunteerRecord.query.filter_by(
+            user_id=registration.user_id,
+            project_id=project.id
+        ).first()
+        
+        if not existing_record:
+            # Create volunteer record for confirmed participants
+            volunteer_record = VolunteerRecord(
+                user_id=registration.user_id,
+                project_id=project.id,
+                hours=project.duration,
+                points=project.points,
+                status='pending',  # Wait for admin approval
+                completed_at=datetime.utcnow()
+            )
+            db.session.add(volunteer_record)
+            records_created += 1
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Project marked as completed. {records_created} volunteer record(s) created for confirmed participants. {not_completed_count} participant(s) marked as not completed.',
+        'records_created': records_created,
+        'not_completed_count': not_completed_count
+    })
 
 @bp.route('/api/admin/dashboard-data')
 def api_admin_dashboard_data():

@@ -42,7 +42,7 @@ class Project(db.Model):
     duration = db.Column(db.Float, nullable=False)  # hours
     points = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, default=0.0)
-    status = db.Column(db.String(20), default='pending')  # pending, approved, in_progress, completed
+    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     requirements = db.Column(db.Text)
     
@@ -53,7 +53,7 @@ class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    status = db.Column(db.String(20), default='registered')  # registered, completed, cancelled
+    status = db.Column(db.String(20), default='registered')  # registered, completed, cancelled，approved
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class VolunteerRecord(db.Model):
@@ -62,7 +62,7 @@ class VolunteerRecord(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     hours = db.Column(db.Float, nullable=False)
     points = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, approved
+    status = db.Column(db.String(20), default='pending')  # pending, approved，rejected
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 

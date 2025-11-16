@@ -17,7 +17,7 @@
                 </svg>
                 Back to Dashboard
             </a>
-            <button class="btn btn-outline">
+            <button id="export-all-btn" class="btn btn-outline">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
@@ -223,7 +223,7 @@
                             {% endif %}
                         </p>
                     </div>
-                    <button class="btn btn-outline">
+                    <button id="export-filtered-btn" class="btn btn-outline">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
@@ -355,15 +355,73 @@
             filterRecords();
         }
         
+        // Export functions
+        function exportAllRecords() {
+            window.location.href = '/api/participant/export-all-records';
+        }
+        
+        function exportFilteredRecords() {
+            const yearFilter = document.getElementById('year-filter').value;
+            const categoryFilter = document.getElementById('category-filter').value;
+            
+            fetch('/api/participant/export-filtered-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    year: yearFilter || null,
+                    category: categoryFilter || null
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Export failed');
+                }
+                // Extract filename from Content-Disposition header
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'filtered_volunteer_records.xlsx';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1].replace(/['"]/g, '');
+                    }
+                }
+                return response.blob().then(blob => ({ blob, filename }));
+            })
+            .then(({ blob, filename }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                alert('Failed to export records. Please try again.');
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const yearFilter = document.getElementById('year-filter');
             const categoryFilter = document.getElementById('category-filter');
+            const exportAllBtn = document.getElementById('export-all-btn');
+            const exportFilteredBtn = document.getElementById('export-filtered-btn');
             
             if (yearFilter) {
                 yearFilter.addEventListener('change', filterRecords);
             }
             if (categoryFilter) {
                 categoryFilter.addEventListener('change', filterRecords);
+            }
+            if (exportAllBtn) {
+                exportAllBtn.addEventListener('click', exportAllRecords);
+            }
+            if (exportFilteredBtn) {
+                exportFilteredBtn.addEventListener('click', exportFilteredRecords);
             }
         });
     </script>

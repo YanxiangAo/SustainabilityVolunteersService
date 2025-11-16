@@ -136,9 +136,12 @@
             <div class="card">
                 <div class="card-header">
                     <h3 style="margin: 0;">Recent Project Activity</h3>
+                    <p class="text-sm text-gray-600 mt-1">Projects created in the last 7 days</p>
                 </div>
                 <div class="card-content">
-                    <p class="text-gray-600">Latest project updates will appear here...</p>
+                    <div id="recent-projects-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <p class="text-gray-600">Loading recent projects...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -218,20 +221,7 @@
 
         <!-- Registrations Tab -->
         <div class="tab-content" id="registrations-tab">
-            <div class="mb-8">
-                <h2>Registration List</h2>
-                <p class="text-gray-600">View and manage project registrations</p>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 style="margin: 0;">Select a project to view registrations</h3>
-                    <p class="text-sm text-gray-600 mt-1">Click "Registrations" on any project to view its registration list</p>
-                </div>
-                <div class="card-content">
-                    <p class="text-gray-500 text-center py-6">No project selected. Go to "Manage Projects" tab to select a project.</p>
-                </div>
-            </div>
+            <!-- Content will be dynamically loaded by JavaScript -->
         </div>
     </main>
 

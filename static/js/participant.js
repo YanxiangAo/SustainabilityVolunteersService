@@ -170,11 +170,33 @@ async function fetchDashboardData() {
     }
 }
 
+async function loadAvailableProjects() {
+    const browseContainer = document.getElementById('browse-projects');
+    if (!browseContainer) return;
+    
+    try {
+        const response = await fetch('/api/participant/available-projects');
+        if (response.status === 401) {
+            browseContainer.innerHTML = '<p class="text-gray-500 text-center py-6">Please log in to view available projects.</p>';
+            return;
+        }
+        if (!response.ok) {
+            throw new Error('Failed to load available projects');
+        }
+        const projects = await response.json();
+        browseContainer.innerHTML = projects.length
+            ? projects.map(project => renderProjectCard(project)).join('')
+            : '<p class="text-gray-500 text-center py-6">No projects available to browse.</p>';
+    } catch (error) {
+        console.error(error);
+        browseContainer.innerHTML = '<p class="text-gray-500 text-center py-6">Failed to load available projects. Please try again later.</p>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     fetchDashboardData().then(data => {
         if (data.error) {
             const dashboardContainers = [
-                document.getElementById('recommended-projects'),
                 document.getElementById('browse-projects'),
                 document.getElementById('badges-container'),
                 document.getElementById('my-registrations')
@@ -203,21 +225,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         renderBadges(data.badges || []);
 
-        const recommendedContainer = document.getElementById('recommended-projects');
-        if (recommendedContainer) {
-            const recommended = data.recommended_projects || [];
-            recommendedContainer.innerHTML = recommended.length
-                ? recommended.map(project => renderProjectCard(project)).join('')
-                : '<p class="text-gray-500 text-center py-6">No recommended projects found.</p>';
-        }
-
-        const browseContainer = document.getElementById('browse-projects');
-        if (browseContainer) {
-            const browse = data.recommended_projects || [];
-            browseContainer.innerHTML = browse.length
-                ? browse.map(project => renderProjectCard(project)).join('')
-                : '<p class="text-gray-500 text-center py-6">No projects available to browse.</p>';
-        }
+        // Load available projects for the browse tab
+        loadAvailableProjects();
 
         renderRegistrations(data.registrations || []);
     });
