@@ -150,6 +150,16 @@
                     <div class="card-content">
                         <!-- Comment Input -->
                         <div class="mb-6">
+                            {% if user_type == 'admin' %}
+                            <textarea id="comment-text" placeholder="Admin users cannot comment on projects" rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);" disabled></textarea>
+                            <button class="btn" style="background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                                Send Comment (Admin Not Allowed)
+                            </button>
+                            {% else %}
                             <textarea id="comment-text" placeholder="Feel free to leave any questions here..." rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
                             <button class="btn btn-primary" onclick="submitComment({{ project.id }})">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
@@ -158,6 +168,7 @@
                                 </svg>
                                 Send Comment
                             </button>
+                            {% endif %}
                         </div>
 
                         <!-- Comments List -->
@@ -211,6 +222,15 @@
                                 <polyline points="20 6 9 17 4 12"/>
                             </svg>
                             Already Registered
+                        </button>
+                        {% elif user_type == 'admin' %}
+                        <button class="btn" id="register-btn" style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            Register Now (Admin Not Allowed)
                         </button>
                         {% else %}
                         <button class="btn btn-primary" id="register-btn" style="width: 100%;" onclick="registerForProject({{ project.id }})">
@@ -294,16 +314,22 @@
             btn.textContent = 'Registering...';
             
             try {
-                const response = await fetch('/api/register-project', {
+                const response = await fetch(`/api/v1/projects/${projectId}/registrations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ project_id: projectId })
+                    }
                 });
                 
                 const result = await response.json();
-                if (result.success) {
+                
+                // Check if user is not authenticated
+                if (response.status === 401) {
+                    // Redirect to login page
+                    window.location.href = '/login';
+                    return;
+                }
+                if (response.ok || response.status === 201) {
                     alert('Successfully registered for this project!');
                     btn.textContent = 'Registered';
                     btn.disabled = true;
@@ -335,7 +361,7 @@
             }
             
             try {
-                const response = await fetch(`/api/project/${projectId}/comment`, {
+                const response = await fetch(`/api/v1/projects/${projectId}/comments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -344,7 +370,15 @@
                 });
                 
                 const result = await response.json();
-                if (result.success) {
+                
+                // Check if user is not authenticated
+                if (response.status === 401) {
+                    // Redirect to login page
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                if (response.ok || response.status === 201) {
                     alert('Comment submitted! (Note: Full comment system requires Comment model implementation)');
                     textarea.value = '';
                 } else {

@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app, send_file, make_response
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -9,6 +10,21 @@ from models import db, User, Project, Registration, VolunteerRecord, Badge, User
 from forms import parse_login_form, parse_register_form
 
 bp = Blueprint('main', __name__)
+
+# Helper function to check user type
+def require_user_type(user_type):
+    """Decorator to require specific user type"""
+    def decorator(f):
+        @login_required
+        def wrapper(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.user_type != user_type:
+                if request.is_json:
+                    return jsonify({'error': 'Not authenticated'}), 401
+                return redirect(url_for('main.login'))
+            return f(*args, **kwargs)
+        wrapper.__name__ = f.__name__
+        return wrapper
+    return decorator
 
 # Routes
 @bp.route('/')
@@ -25,7 +41,20 @@ def login():
         ).first()
 
         if user and user.check_password(form.password):
-            session['user_id'] = user.id
+            # Check if user is active
+            if hasattr(user, 'is_active') and not user.is_active:
+                return render_template('login.html', error='Your account has been disabled. Please contact an administrator.')
+            
+            # Use Flask-Login to log in the user
+            login_user(user, remember=form.remember)
+
+            # Ensure we don't persist the session unless the user requested it
+            session.permanent = False
+            if not form.remember:
+                session['_remember'] = 'clear'
+                session.pop('_remember_seconds', None)
+            
+            # Keep session data for backward compatibility
             session['user_type'] = user.user_type
             session['username'] = user.username
             
@@ -59,7 +88,7 @@ def register():
         
         # Create new user
         try:
-            user = User(username=form.username, email=form.email, user_type=form.user_type)
+            user = User()
             user.set_password(form.password)
             db.session.add(user)
             db.session.commit()
@@ -74,33 +103,42 @@ def register():
     return render_template('login.html')
 
 @bp.route('/logout')
+@login_required
 def logout():
+    logout_user()
+    # Ensure remember-me cookies/session flags are cleared
+    session.pop('_remember', None)
+    session.pop('_remember_seconds', None)
     session.clear()
-    return redirect(url_for('main.index'))
+    
+    response = make_response(redirect(url_for('main.index')))
+    remember_cookie_name = current_app.config.get('REMEMBER_COOKIE_NAME', 'remember_token')
+    response.delete_cookie(remember_cookie_name)
+    return response
 
 @bp.route('/participant/dashboard')
+@login_required
 def participant_dashboard():
-    if 'user_id' not in session or session.get('user_type') != 'participant':
+    if current_user.user_type != 'participant':
         return redirect(url_for('main.login'))
     
-    user = User.query.get(session['user_id'])
-    return render_template('participant_dashboard.html', user=user)
+    return render_template('participant_dashboard.html', user=current_user)
 
 @bp.route('/organization/dashboard')
+@login_required
 def organization_dashboard():
-    if 'user_id' not in session or session.get('user_type') != 'organization':
+    if current_user.user_type != 'organization':
         return redirect(url_for('main.login'))
     
-    user = User.query.get(session['user_id'])
-    return render_template('organization_dashboard.html', user=user)
+    return render_template('organization_dashboard.html', user=current_user)
 
 @bp.route('/admin/panel')
+@login_required
 def admin_panel():
-    if 'user_id' not in session or session.get('user_type') != 'admin':
+    if current_user.user_type != 'admin':
         return redirect(url_for('main.login'))
     
-    user = User.query.get(session['user_id'])
-    return render_template('admin_panel.html', user=user)
+    return render_template('admin_panel.html', user=current_user)
 
 @bp.route('/project/<int:project_id>')
 def project_detail(project_id):
@@ -118,9 +156,11 @@ def project_detail(project_id):
     
     # Check if current user is registered
     is_registered = False
-    if 'user_id' in session:
+    user_type = None
+    if current_user.is_authenticated:
+        user_type = current_user.user_type
         existing_reg = Registration.query.filter(
-            Registration.user_id == session['user_id'],
+            Registration.user_id == current_user.id,
             Registration.project_id == project.id,
             Registration.status.in_(active_statuses + ('completed',))
         ).first()
@@ -131,7 +171,8 @@ def project_detail(project_id):
                          organization=organization,
                          registration_count=registration_count,
                          registrations=registrations,
-                         is_registered=is_registered)
+                         is_registered=is_registered,
+                         user_type=user_type)
 
 @bp.route('/demo/project')
 def demo_project_detail():
@@ -171,12 +212,12 @@ def demo_project_detail():
     )
 
 @bp.route('/volunteer-record')
+@login_required
 def volunteer_record():
-    if 'user_id' not in session or session.get('user_type') != 'participant':
+    if current_user.user_type != 'participant':
         return redirect(url_for('main.login'))
     
-    user = User.query.get(session['user_id'])
-    records = VolunteerRecord.query.filter_by(user_id=user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
     
     # Calculate statistics
     total_hours = sum(r.hours for r in records if r.status == 'approved')
@@ -218,7 +259,7 @@ def volunteer_record():
         })
     
     return render_template('volunteer_record.html', 
-                         user=user, 
+                         user=current_user, 
                          records_data=records_data,
                          total_hours=total_hours,
                          total_points=total_points,
@@ -288,20 +329,17 @@ def _generate_excel_from_records(records, filename_prefix="volunteer_records", u
 
 
 @bp.route('/api/participant/export-all-records')
+@login_required
 def api_export_all_records():
     """Export all volunteer records for the current participant."""
-    if 'user_id' not in session or session.get('user_type') != 'participant':
+    if current_user.user_type != 'participant':
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
     # Get all records
-    records = VolunteerRecord.query.filter_by(user_id=user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
     
     # Get user display_name (fallback to username if not set)
-    user_display_name = user.display_name or user.username
+    user_display_name = current_user.display_name or current_user.username
     
     output, filename = _generate_excel_from_records(records, "all_volunteer_records", user_display_name)
     
@@ -314,21 +352,18 @@ def api_export_all_records():
 
 
 @bp.route('/api/participant/export-filtered-records', methods=['POST'])
+@login_required
 def api_export_filtered_records():
     """Export filtered volunteer records for the current participant."""
-    if 'user_id' not in session or session.get('user_type') != 'participant':
+    if current_user.user_type != 'participant':
         return jsonify({'error': 'Not authenticated'}), 401
-    
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
     
     data = request.get_json()
     year_filter = data.get('year')
     category_filter = data.get('category')
     
     # Get all records
-    records = VolunteerRecord.query.filter_by(user_id=user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
     
     # Apply filters
     filtered_records = []
@@ -346,7 +381,7 @@ def api_export_filtered_records():
         filtered_records.append(record)
     
     # Get user display_name (fallback to username if not set)
-    user_display_name = user.display_name or user.username
+    user_display_name = current_user.display_name or current_user.username
     
     output, filename = _generate_excel_from_records(filtered_records, "filtered_volunteer_records", user_display_name)
     
@@ -357,167 +392,387 @@ def api_export_filtered_records():
         download_name=filename
     )
 
-# API Routes for AJAX calls
-@bp.route('/api/projects')
-def api_projects():
+# ============================================================================
+# RESTful API Routes
+# ============================================================================
+
+# Projects Resource
+@bp.route('/api/v1/projects', methods=['GET'])
+def api_projects_list():
     """Get all approved projects (for homepage, exclude expired projects)."""
+    # Support query parameters
+    status = request.args.get('status', 'approved')
+    available = request.args.get('available', 'false').lower() == 'true'
     today = datetime.utcnow().date()
-    projects = Project.query.filter_by(status='approved').filter(Project.date >= today).order_by(Project.date.asc()).all()
-    return jsonify([{
-        'id': p.id,
-        'title': p.title,
-        'category': p.category,
-        'date': p.date.strftime('%Y-%m-%d'),
-        'location': p.location,
-        'rating': p.rating,
-        'max_participants': p.max_participants,
-        'organization_name': p.organization.display_name or p.organization.username if p.organization else None,
-        'current_participants': sum(1 for r in p.registrations if r.status != 'cancelled')
-    } for p in projects])
-
-
-@bp.route('/api/participant/available-projects')
-def api_participant_available_projects():
-    """Get available projects for the current participant (filtered)."""
-    if 'user_id' not in session or session.get('user_type') != 'participant':
-        return jsonify({'error': 'Not authenticated'}), 401
     
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    query = Project.query
+    if status:
+        query = query.filter_by(status=status)
+    if available:
+        query = query.filter(Project.date >= today)
     
-    # Get all approved projects
-    all_projects = Project.query.filter_by(status='approved').order_by(Project.date.asc()).all()
+    projects = query.order_by(Project.date.asc()).all()
     
-    # Get user's existing registrations (both approved and cancelled should be excluded)
-    user_registration_project_ids = {
-        reg.project_id for reg in Registration.query.filter_by(user_id=user.id).all()
-    }
+    result = []
+    for p in projects:
+        current_participants = sum(1 for r in p.registrations if r.status != 'cancelled')
+        project_data = {
+            'id': p.id,
+            'title': p.title,
+            'category': p.category,
+            'date': p.date.strftime('%Y-%m-%d') if p.date else None,
+            'location': p.location,
+            'rating': p.rating,
+            'max_participants': p.max_participants,
+            'current_participants': current_participants,
+            'status': p.status,
+            'organization': {
+                'id': p.organization_id,
+                'name': p.organization.display_name or p.organization.username if p.organization else None
+            }
+        }
+        # Only include if not expired when available=true
+        if not available or (p.date and p.date >= today):
+            result.append(project_data)
     
-    today = datetime.utcnow().date()
-    available_projects = []
+    return jsonify(result)
+
+@bp.route('/api/v1/projects/<int:project_id>', methods=['GET'])
+def api_project_detail(project_id):
+    """Get a single project by ID."""
+    project = Project.query.get_or_404(project_id)
+    organization = project.organization
     
-    for project in all_projects:
-        # Filter 1: Skip if user has already registered (regardless of status)
-        if project.id in user_registration_project_ids:
-            continue
-        
-        # Filter 2: Skip if project date has passed
-        if project.date < today:
-            continue
-        
-        # Filter 3: Skip if project is full
-        current_participants = sum(1 for r in project.registrations if r.status != 'cancelled')
-        if current_participants >= project.max_participants:
-            continue
-        
-        # Project is available
-        available_projects.append({
-            'id': project.id,
-            'title': project.title,
-            'category': project.category,
-            'date': project.date.strftime('%Y-%m-%d'),
-            'location': project.location,
-            'rating': project.rating,
-            'max_participants': project.max_participants,
-            'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
-            'current_participants': current_participants
-        })
-    
-    return jsonify(available_projects)
-
-
-@bp.route('/api/participant/dashboard-data')
-def api_participant_dashboard_data():
-    if 'user_id' not in session or session.get('user_type') != 'participant':
-        return jsonify({'error': 'Not authenticated'}), 401
-
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-
-    # Removed recommended_projects - no longer needed
-
-    # Registrations for the user
-    user_registrations = Registration.query.filter_by(user_id=user.id).order_by(Registration.created_at.desc()).all()
-    registration_payload = []
-    for registration in user_registrations:
-        project = registration.project
-        status_label = registration.status.replace('_', ' ').title()
-        progress = 0
-        if registration.status == 'completed':
-            progress = 100
-        elif registration.status == 'in_progress':
-            progress = 40
-        elif registration.status == 'approved':
-            progress = 60
-
-        registration_payload.append({
-            'id': project.id,
-            'title': project.title,
-            'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
-            'date': project.date.strftime('%Y-%m-%d'),
-            'status': status_label,
-            'progress': progress
-        })
-
-    # Badge data
-    all_badges = Badge.query.order_by(Badge.id.asc()).all()
-    user_badges = {ub.badge_id: ub for ub in UserBadge.query.filter_by(user_id=user.id).all()}
-
-    badges_payload = []
-    for badge in all_badges:
-        user_badge = user_badges.get(badge.id)
-        badges_payload.append({
-            'code': badge.code,
-            'name': badge.name,
-            'description': badge.description,
-            'earned': bool(user_badge and user_badge.earned),
-            'accent_color': badge.accent_color,
-            'background_color': badge.background_color,
-            'icon': badge.icon
-        })
-
-    # Calculate statistics
-    # 使用与 volunteer_record 页面相同的逻辑：统计已审核通过的 VolunteerRecord
-    approved_records = VolunteerRecord.query.filter_by(user_id=user.id, status='approved').all()
-    total_hours = sum(r.hours for r in approved_records)
-    total_points = sum(r.points for r in approved_records)
-    completed_count = len(approved_records)  # 与 Hour Records 页面保持一致
-    upcoming_count = Registration.query.join(Project).filter(
-        Registration.user_id == user.id,
-        Registration.status.in_(('registered', 'approved')),
-        Project.date >= datetime.utcnow().date()
-    ).count()
-
     return jsonify({
-        'user': {
-            'display_name': user.display_name or user.username
-        },
-        'statistics': {
-            'total_hours': total_hours,
-            'total_points': total_points,
-            'completed': completed_count,
-            'upcoming': upcoming_count
-        },
-        'registrations': registration_payload,
-        'badges': badges_payload
+        'id': project.id,
+        'title': project.title,
+        'description': project.description,
+        'category': project.category,
+        'date': project.date.strftime('%Y-%m-%d') if project.date else None,
+        'location': project.location,
+        'rating': project.rating,
+        'max_participants': project.max_participants,
+        'current_participants': sum(1 for r in project.registrations if r.status != 'cancelled'),
+        'duration': project.duration,
+        'points': project.points,
+        'status': project.status,
+        'requirements': project.requirements,
+        'organization': {
+            'id': organization.id if organization else None,
+            'name': organization.display_name or organization.username if organization else None,
+            'email': organization.email if organization else None
+        } if organization else None
     })
 
-@bp.route('/api/register-project', methods=['POST'])
-def api_register_project():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+@bp.route('/api/v1/projects', methods=['POST'])
+@login_required
+def api_projects_create():
+    """Create a new project."""
+    if current_user.user_type != 'organization':
+        return jsonify({'error': 'Only organizations can create projects'}), 403
     
-    data = request.get_json()
-    project_id = data.get('project_id')
+    data = request.form if request.form else request.get_json()
     
-    if not project_id:
-        return jsonify({'error': 'Project ID required'}), 400
+    project = Project(
+        title=data.get('title'),
+        description=data.get('description'),
+        category=data.get('category'),
+        organization_id=current_user.id,
+        date=datetime.strptime(data.get('date'), '%Y-%m-%d').date() if data.get('date') else None,
+        location=data.get('location'),
+        max_participants=int(data.get('max_participants', 0)),
+        duration=float(data.get('duration', 0)),
+        points=int(data.get('points', 0)),
+        status='pending',
+        requirements=data.get('requirements', '')
+    )
+    db.session.add(project)
+    db.session.commit()
+    
+    return jsonify({
+        'id': project.id,
+        'title': project.title,
+        'status': project.status,
+        'message': 'Project created successfully'
+    }), 201
+
+@bp.route('/api/v1/projects/<int:project_id>', methods=['PATCH'])
+@login_required
+def api_projects_update(project_id):
+    """Update a project (status, etc.)."""
+    project = Project.query.get_or_404(project_id)
+    data = request.get_json() or {}
+    
+    # Check permissions
+    if current_user.user_type == 'admin':
+        # Admin can update status
+        if 'status' in data:
+            project.status = data['status']
+    elif current_user.user_type == 'organization' and project.organization_id == current_user.id:
+        # Organization can update their own projects (but not status to approved/rejected)
+        if 'status' in data and data['status'] in ('approved', 'rejected'):
+            return jsonify({'error': 'Cannot change status to approved/rejected'}), 403
+        # Allow other updates
+        for key in ['title', 'description', 'category', 'location', 'max_participants', 'duration', 'points', 'requirements']:
+            if key in data:
+                setattr(project, key, data[key])
+    else:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.session.commit()
+    return jsonify({
+        'id': project.id,
+        'status': project.status,
+        'message': 'Project updated successfully'
+    })
+
+# Dashboard Resource
+@bp.route('/api/v1/users/me/dashboard', methods=['GET'])
+@login_required
+def api_users_me_dashboard():
+    """Get current user's dashboard data."""
+    user_type = current_user.user_type
+    
+    if user_type == 'participant':
+        # Get registrations for the user
+        user_registrations = Registration.query.filter_by(user_id=current_user.id).order_by(Registration.created_at.desc()).all()
+        registration_payload = []
+        for registration in user_registrations:
+            project = registration.project
+            status_label = registration.status.replace('_', ' ').title()
+            progress = 0
+            if registration.status == 'completed':
+                progress = 100
+            elif registration.status == 'in_progress':
+                progress = 40
+            elif registration.status == 'approved':
+                progress = 60
+
+            registration_payload.append({
+                'id': project.id,
+                'title': project.title,
+                'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
+                'date': project.date.strftime('%Y-%m-%d'),
+                'status': status_label,
+                'progress': progress
+            })
+
+        # Badge data
+        all_badges = Badge.query.order_by(Badge.id.asc()).all()
+        user_badges = {ub.badge_id: ub for ub in UserBadge.query.filter_by(user_id=current_user.id).all()}
+
+        badges_payload = []
+        for badge in all_badges:
+            user_badge = user_badges.get(badge.id)
+            badges_payload.append({
+                'code': badge.code,
+                'name': badge.name,
+                'description': badge.description,
+                'earned': bool(user_badge and user_badge.earned),
+                'accent_color': badge.accent_color,
+                'background_color': badge.background_color,
+                'icon': badge.icon
+            })
+
+        # Calculate statistics
+        approved_records = VolunteerRecord.query.filter_by(user_id=current_user.id, status='approved').all()
+        total_hours = sum(r.hours for r in approved_records)
+        total_points = sum(r.points for r in approved_records)
+        completed_count = len(approved_records)
+        upcoming_count = Registration.query.join(Project).filter(
+            Registration.user_id == current_user.id,
+            Registration.status.in_(('registered', 'approved')),
+            Project.date >= datetime.utcnow().date()
+        ).count()
+
+        return jsonify({
+            'user': {
+                'display_name': current_user.display_name or current_user.username
+            },
+            'statistics': {
+                'total_hours': total_hours,
+                'total_points': total_points,
+                'completed': completed_count,
+                'upcoming': upcoming_count
+            },
+            'registrations': registration_payload,
+            'badges': badges_payload
+        })
+    
+    elif user_type == 'organization':
+        # Get organization's projects
+        projects = Project.query.filter_by(organization_id=current_user.id).all()
+        
+        active_projects = sum(1 for p in projects if p.status == 'approved')
+        active_registration_statuses = ('registered', 'approved')
+        total_participants = sum(
+            Registration.query.filter(
+                Registration.project_id == p.id,
+                Registration.status.in_(active_registration_statuses)
+            ).count()
+            for p in projects
+        )
+        completed_projects = sum(1 for p in projects if p.status == 'completed')
+        pending_projects = sum(1 for p in projects if p.status == 'pending')
+        
+        projects_payload = []
+        for project in projects:
+            registrations = Registration.query.filter_by(project_id=project.id).all()
+            projects_payload.append({
+                'id': project.id,
+                'title': project.title,
+                'status': project.status,
+                'date': project.date.strftime('%Y-%m-%d') if project.date else None,
+                'location': project.location,
+                'max_participants': project.max_participants,
+                'current_participants': sum(1 for r in registrations if r.status in active_registration_statuses),
+                'rating': project.rating
+            })
+        
+        # Get recent projects from the last week
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        recent_projects = Project.query.filter(
+            Project.organization_id == current_user.id,
+            Project.created_at >= week_ago,
+            Project.status == 'approved'
+        ).order_by(Project.created_at.desc()).limit(8).all()
+        
+        recent_projects_payload = []
+        for project in recent_projects:
+            registrations = Registration.query.filter_by(project_id=project.id).all()
+            recent_projects_payload.append({
+                'id': project.id,
+                'title': project.title,
+                'status': project.status,
+                'date': project.date.strftime('%Y-%m-%d') if project.date else None,
+                'location': project.location,
+                'created_at': project.created_at.strftime('%Y-%m-%d') if project.created_at else None,
+                'current_participants': sum(1 for r in registrations if r.status in active_registration_statuses),
+                'max_participants': project.max_participants,
+                'rating': project.rating,
+                'organization_name': project.organization.display_name or project.organization.username if project.organization else None
+            })
+        
+        return jsonify({
+            'statistics': {
+                'active_projects': active_projects,
+                'total_participants': total_participants,
+                'completed': completed_projects,
+                'pending': pending_projects
+            },
+            'projects': projects_payload,
+            'recent_projects': recent_projects_payload
+        })
+    
+    elif user_type == 'admin':
+        # Pending projects for review
+        pending_projects = Project.query.filter_by(status='pending').order_by(Project.created_at.desc()).all()
+        projects_payload = []
+        for project in pending_projects:
+            org = project.organization
+            projects_payload.append({
+                'id': project.id,
+                'title': project.title,
+                'organization_name': org.display_name or org.username if org else 'Unknown',
+                'organization_email': org.email if org else None,
+                'date': project.date.strftime('%Y-%m-%d') if project.date else None,
+                'location': project.location,
+                'max_participants': project.max_participants,
+                'rating': project.rating,
+                'description': project.description,
+                'submitted_date': project.created_at.strftime('%Y-%m-%d') if project.created_at else None
+            })
+        
+        # Pending volunteer records for review
+        pending_records = VolunteerRecord.query.filter_by(status='pending').order_by(VolunteerRecord.completed_at.desc()).all()
+        records_payload = []
+        for record in pending_records:
+            participant = record.user
+            project = record.project
+            org = project.organization if project else None
+            records_payload.append({
+                'id': record.id,
+                'participant_name': participant.display_name or participant.username,
+                'project_name': project.title if project else 'Unknown',
+                'organization_name': org.display_name or org.username if org else 'Unknown',
+                'hours': record.hours,
+                'points': record.points,
+                'completion_date': record.completed_at.strftime('%Y-%m-%d') if record.completed_at else None
+            })
+        
+        # All users (exclude admin users)
+        users = User.query.filter(User.user_type != 'admin').order_by(User.created_at.desc()).limit(100).all()
+        users_payload = []
+        for u in users:
+            users_payload.append({
+                'id': u.id,
+                'username': u.username,
+                'display_name': u.display_name,
+                'email': u.email,
+                'user_type': u.user_type,
+                'is_active': u.is_active if hasattr(u, 'is_active') else True,
+                'created_at': u.created_at.strftime('%Y-%m-%d') if u.created_at else None
+            })
+        
+        return jsonify({
+            'pending_projects': projects_payload,
+            'pending_records': records_payload,
+            'users': users_payload
+        })
+    
+    return jsonify({'error': 'Invalid user type'}), 400
+
+# Registrations Resource
+@bp.route('/api/v1/projects/<int:project_id>/registrations', methods=['GET'])
+@login_required
+def api_project_registrations_list(project_id):
+    """Get all registrations for a project."""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions
+    if current_user.user_type == 'organization' and project.organization_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type == 'participant':
+        # Participants can only see their own registrations
+        registrations = Registration.query.filter_by(
+            project_id=project_id,
+            user_id=current_user.id
+        ).all()
+    else:
+        # Admin or organization owner can see all
+        registrations = Registration.query.filter_by(project_id=project_id).all()
+    
+    result = []
+    for reg in registrations:
+        participant = reg.user
+        result.append({
+            'id': reg.id,
+            'user_id': reg.user_id,
+            'project_id': reg.project_id,
+            'status': reg.status,
+            'created_at': reg.created_at.strftime('%Y-%m-%d %H:%M:%S') if reg.created_at else None,
+            'participant': {
+                'id': participant.id,
+                'name': participant.display_name or participant.username,
+                'email': participant.email
+            } if participant else None
+        })
+    
+    return jsonify(result)
+
+@bp.route('/api/v1/projects/<int:project_id>/registrations', methods=['POST'])
+@login_required
+def api_project_registrations_create(project_id):
+    """Register for a project."""
+    # Admin users are not allowed to register for projects
+    if current_user.user_type == 'admin':
+        return jsonify({'error': 'Admin users cannot register for projects', 'requires_login': True}), 403
+    
+    project = Project.query.get_or_404(project_id)
     
     # Check if already registered
     existing = Registration.query.filter_by(
-        user_id=session['user_id'],
+        user_id=current_user.id,
         project_id=project_id
     ).first()
     
@@ -525,10 +780,6 @@ def api_register_project():
         return jsonify({'error': 'Already registered for this project'}), 400
     
     # Check if project is full
-    project = Project.query.get(project_id)
-    if not project:
-        return jsonify({'error': 'Project not found'}), 404
-    
     current_registrations = Registration.query.filter(
         Registration.project_id == project_id,
         Registration.status.in_(('registered', 'approved'))
@@ -538,95 +789,140 @@ def api_register_project():
         return jsonify({'error': 'Project is full'}), 400
     
     registration = Registration(
-        user_id=session['user_id'],
+        user_id=current_user.id,
         project_id=project_id,
         status='registered'
     )
     db.session.add(registration)
     db.session.commit()
     
-    return jsonify({'success': True, 'message': 'Successfully registered for project'})
+    return jsonify({
+        'id': registration.id,
+        'project_id': project_id,
+        'status': registration.status,
+        'message': 'Successfully registered for project'
+    }), 201
 
-@bp.route('/api/organization/dashboard-data')
-def api_organization_dashboard_data():
-    if 'user_id' not in session or session.get('user_type') != 'organization':
-        return jsonify({'error': 'Not authenticated'}), 401
+@bp.route('/api/v1/registrations/<int:registration_id>', methods=['GET'])
+@login_required
+def api_registration_detail(registration_id):
+    """Get a single registration."""
+    registration = Registration.query.get_or_404(registration_id)
     
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
+    # Check permissions
+    if current_user.user_type == 'participant' and registration.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type == 'organization':
+        project = registration.project
+        if not project or project.organization_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
     
-    # Get organization's projects
-    projects = Project.query.filter_by(organization_id=user.id).all()
-    
-    active_projects = sum(1 for p in projects if p.status == 'approved')
-    active_registration_statuses = ('registered', 'approved')
-    total_participants = sum(
-        Registration.query.filter(
-            Registration.project_id == p.id,
-            Registration.status.in_(active_registration_statuses)
-        ).count()
-        for p in projects
-    )
-    completed_projects = sum(1 for p in projects if p.status == 'completed')
-    pending_projects = sum(1 for p in projects if p.status == 'pending')
-    
-    projects_payload = []
-    for project in projects:
-        registrations = Registration.query.filter_by(project_id=project.id).all()
-        projects_payload.append({
-            'id': project.id,
-            'title': project.title,
-            'status': project.status,
-            'date': project.date.strftime('%Y-%m-%d') if project.date else None,
-            'location': project.location,
-            'max_participants': project.max_participants,
-            'current_participants': sum(1 for r in registrations if r.status in active_registration_statuses),
-            'rating': project.rating
-        })
-    
-    # Get recent projects from the last week (created in the last 7 days)
-    week_ago = datetime.utcnow() - timedelta(days=7)
-    recent_projects = Project.query.filter(
-        Project.organization_id == user.id,
-        Project.created_at >= week_ago,
-        Project.status == 'approved'
-    ).order_by(Project.created_at.desc()).limit(8).all()
-    
-    recent_projects_payload = []
-    for project in recent_projects:
-        registrations = Registration.query.filter_by(project_id=project.id).all()
-        recent_projects_payload.append({
-            'id': project.id,
-            'title': project.title,
-            'status': project.status,
-            'date': project.date.strftime('%Y-%m-%d') if project.date else None,
-            'location': project.location,
-            'created_at': project.created_at.strftime('%Y-%m-%d') if project.created_at else None,
-            'current_participants': sum(1 for r in registrations if r.status in active_registration_statuses),
-            'max_participants': project.max_participants,
-            'rating': project.rating,
-            'organization_name': project.organization.display_name or project.organization.username if project.organization else None
-        })
+    participant = registration.user
+    project = registration.project
     
     return jsonify({
-        'statistics': {
-            'active_projects': active_projects,
-            'total_participants': total_participants,
-            'completed': completed_projects,
-            'pending': pending_projects
-        },
-        'projects': projects_payload,
-        'recent_projects': recent_projects_payload
+        'id': registration.id,
+        'user_id': registration.user_id,
+        'project_id': registration.project_id,
+        'status': registration.status,
+        'created_at': registration.created_at.strftime('%Y-%m-%d %H:%M:%S') if registration.created_at else None,
+        'participant': {
+            'id': participant.id,
+            'name': participant.display_name or participant.username,
+            'email': participant.email
+        } if participant else None,
+        'project': {
+            'id': project.id,
+            'title': project.title
+        } if project else None
     })
 
+@bp.route('/api/v1/registrations/<int:registration_id>', methods=['PATCH'])
+@login_required
+def api_registration_update(registration_id):
+    """Update registration status."""
+    registration = Registration.query.get_or_404(registration_id)
+    project = registration.project
+    
+    # Check permissions
+    if current_user.user_type == 'organization':
+        if not project or project.organization_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json(silent=True) or request.form or {}
+    new_status = (data.get('status') or '').strip().lower()
+    allowed_statuses = {'registered', 'approved', 'cancelled', 'completed'}
+    
+    if new_status not in allowed_statuses:
+        return jsonify({'error': 'Invalid status'}), 400
+    
+    registration.status = new_status
+    
+    # If organization confirms participant completed project, auto-create pending volunteer record
+    if new_status == 'completed':
+        existing_record = VolunteerRecord.query.filter_by(
+            user_id=registration.user_id,
+            project_id=registration.project_id
+        ).first()
+        
+        if not existing_record:
+            volunteer_record = VolunteerRecord(
+                user_id=registration.user_id,
+                project_id=registration.project_id,
+                hours=project.duration,
+                points=project.points,
+                status='pending',
+                completed_at=datetime.utcnow()
+            )
+            db.session.add(volunteer_record)
+    
+    db.session.commit()
+    
+    # Check if project should be auto-completed
+    project_auto_completed = _check_and_auto_complete_project(project)
+    
+    response_data = {
+        'id': registration.id,
+        'status': new_status,
+        'message': 'Registration status updated successfully'
+    }
+    if project_auto_completed:
+        response_data['project_auto_completed'] = True
+        response_data['message'] = 'Registration status updated. Project has been automatically marked as completed.'
+    
+    return jsonify(response_data)
+
+@bp.route('/api/v1/registrations/<int:registration_id>', methods=['DELETE'])
+@login_required
+def api_registration_delete(registration_id):
+    """Cancel/delete a registration."""
+    registration = Registration.query.get_or_404(registration_id)
+    
+    # Check permissions
+    if current_user.user_type == 'participant' and registration.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type == 'organization':
+        project = registration.project
+        if not project or project.organization_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Instead of deleting, mark as cancelled
+    registration.status = 'cancelled'
+    db.session.commit()
+    
+    return jsonify({'message': 'Registration cancelled successfully'}), 200
+
+
 @bp.route('/api/organization/registrations/<int:project_id>')
+@login_required
 def api_organization_registrations(project_id):
-    if 'user_id' not in session or session.get('user_type') != 'organization':
+    if current_user.user_type != 'organization':
         return jsonify({'error': 'Not authenticated'}), 401
     
     project = Project.query.get_or_404(project_id)
-    if project.organization_id != session['user_id']:
+    if project.organization_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
     
     registrations = Registration.query.filter_by(project_id=project_id).all()
@@ -648,17 +944,14 @@ def api_organization_registrations(project_id):
 
 
 @bp.route('/api/organization/all-registrations')
+@login_required
 def api_organization_all_registrations():
     """Get all registrations for all projects of the current organization."""
-    if 'user_id' not in session or session.get('user_type') != 'organization':
+    if current_user.user_type != 'organization':
         return jsonify({'error': 'Not authenticated'}), 401
     
-    user = User.query.get(session['user_id'])
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
     # Get all projects for this organization
-    projects = Project.query.filter_by(organization_id=user.id).all()
+    projects = Project.query.filter_by(organization_id=current_user.id).all()
     
     projects_with_registrations = []
     for project in projects:
@@ -736,256 +1029,313 @@ def _check_and_auto_complete_project(project):
     return True  # Project was auto-completed
 
 
-@bp.route('/api/organization/registration/<int:registration_id>/status', methods=['POST'])
-def api_organization_update_registration_status(registration_id):
-    if 'user_id' not in session or session.get('user_type') != 'organization':
-        return jsonify({'error': 'Not authenticated'}), 401
+
+
+# Records Resource (VolunteerRecord)
+@bp.route('/api/v1/records', methods=['GET'])
+@login_required
+def api_records_list():
+    """Get volunteer records."""
+    # Support query parameters
+    status = request.args.get('status')
+    user_id = request.args.get('user_id', type=int)
     
-    registration = Registration.query.get_or_404(registration_id)
-    project = registration.project
-    if not project or project.organization_id != session['user_id']:
+    query = VolunteerRecord.query
+    
+    # Permission checks
+    if current_user.user_type == 'participant':
+        # Participants can only see their own records
+        query = query.filter_by(user_id=current_user.id)
+    elif current_user.user_type == 'organization':
+        # Organizations can see records for their projects
+        query = query.join(Project).filter(Project.organization_id == current_user.id)
+    elif current_user.user_type != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
     
-    data = request.get_json(silent=True) or request.form or {}
-    new_status = (data.get('status') or '').strip().lower()
-    allowed_statuses = {'registered', 'approved', 'cancelled', 'completed'}
-    if new_status not in allowed_statuses:
-        return jsonify({'error': 'Invalid status'}), 400
+    if status:
+        query = query.filter_by(status=status)
+    if user_id and current_user.user_type == 'admin':
+        query = query.filter_by(user_id=user_id)
     
-    registration.status = new_status
+    records = query.order_by(VolunteerRecord.completed_at.desc()).all()
     
-    # 如果组织确认参与者完成项目，自动创建待审核的工时记录
-    if new_status == 'completed':
-        # 检查是否已经存在该参与者的工时记录
-        existing_record = VolunteerRecord.query.filter_by(
-            user_id=registration.user_id,
-            project_id=registration.project_id
-        ).first()
+    result = []
+    for record in records:
+        project = record.project
+        participant = record.user
+        organization = project.organization if project else None
         
-        if not existing_record:
-            # 创建新的工时记录，状态为 pending，等待管理员审核
-            volunteer_record = VolunteerRecord(
-                user_id=registration.user_id,
-                project_id=registration.project_id,
-                hours=project.duration,  # 使用项目的时长
-                points=project.points,  # 使用项目的积分
-                status='pending',  # 待管理员审核
-                completed_at=datetime.utcnow()
-            )
-            db.session.add(volunteer_record)
+        result.append({
+            'id': record.id,
+            'user_id': record.user_id,
+            'project_id': record.project_id,
+            'hours': record.hours,
+            'points': record.points,
+            'status': record.status,
+            'completed_at': record.completed_at.strftime('%Y-%m-%d') if record.completed_at else None,
+            'project': {
+                'id': project.id,
+                'title': project.title,
+                'category': project.category
+            } if project else None,
+            'participant': {
+                'id': participant.id,
+                'name': participant.display_name or participant.username
+            } if participant else None,
+            'organization': {
+                'id': organization.id,
+                'name': organization.display_name or organization.username
+            } if organization else None
+        })
+    
+    return jsonify(result)
+
+@bp.route('/api/v1/records/<int:record_id>', methods=['GET'])
+@login_required
+def api_record_detail(record_id):
+    """Get a single volunteer record."""
+    record = VolunteerRecord.query.get_or_404(record_id)
+    
+    # Check permissions
+    if current_user.user_type == 'participant' and record.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type == 'organization':
+        project = record.project
+        if not project or project.organization_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+    
+    project = record.project
+    participant = record.user
+    organization = project.organization if project else None
+    
+    return jsonify({
+        'id': record.id,
+        'user_id': record.user_id,
+        'project_id': record.project_id,
+        'hours': record.hours,
+        'points': record.points,
+        'status': record.status,
+        'completed_at': record.completed_at.strftime('%Y-%m-%d') if record.completed_at else None,
+        'project': {
+            'id': project.id,
+            'title': project.title,
+            'category': project.category
+        } if project else None,
+        'participant': {
+            'id': participant.id,
+            'name': participant.display_name or participant.username,
+            'email': participant.email
+        } if participant else None,
+        'organization': {
+            'id': organization.id,
+            'name': organization.display_name or organization.username
+        } if organization else None
+    })
+
+@bp.route('/api/v1/records/<int:record_id>', methods=['PATCH'])
+@login_required
+def api_record_update(record_id):
+    """Update a volunteer record (status)."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Only admins can update records'}), 403
+    
+    record = VolunteerRecord.query.get_or_404(record_id)
+    data = request.get_json() or {}
+    
+    if 'status' in data:
+        allowed_statuses = {'pending', 'approved', 'rejected'}
+        if data['status'] not in allowed_statuses:
+            return jsonify({'error': 'Invalid status'}), 400
+        record.status = data['status']
     
     db.session.commit()
-    
-    # Check if project should be auto-completed
-    project_auto_completed = _check_and_auto_complete_project(project)
-    
-    response_data = {
-        'success': True, 
-        'status': new_status
-    }
-    if project_auto_completed:
-        response_data['project_auto_completed'] = True
-        response_data['message'] = 'Registration status updated. Project has been automatically marked as completed since all participants are finalized.'
-    
-    return jsonify(response_data)
+    return jsonify({
+        'id': record.id,
+        'status': record.status,
+        'message': 'Record updated successfully'
+    })
 
-
-@bp.route('/api/organization/project/<int:project_id>/complete', methods=['POST'])
-def api_organization_complete_project(project_id):
-    """Mark a project as completed. Only participants with status='completed' will have volunteer records."""
-    if 'user_id' not in session or session.get('user_type') != 'organization':
-        return jsonify({'error': 'Not authenticated'}), 401
+@bp.route('/api/v1/records/batch', methods=['PATCH'])
+@login_required
+def api_records_batch_update():
+    """Batch update volunteer records."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Only admins can batch update records'}), 403
     
-    project = Project.query.get_or_404(project_id)
-    if project.organization_id != session['user_id']:
-        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    record_ids = data.get('record_ids', [])
+    new_status = data.get('status')
     
-    # Check if project is already completed
-    if project.status == 'completed':
-        return jsonify({'error': 'Project is already completed'}), 400
+    if not record_ids:
+        return jsonify({'error': 'No record IDs provided'}), 400
     
-    # Mark project as completed
-    project.status = 'completed'
+    if not isinstance(record_ids, list):
+        return jsonify({'error': 'record_ids must be a list'}), 400
     
-    # Get all registrations for this project
-    all_registrations = Registration.query.filter_by(project_id=project.id).all()
+    if new_status not in ('pending', 'approved', 'rejected'):
+        return jsonify({'error': 'Invalid status'}), 400
     
-    # For participants who have already been confirmed as completed (status='completed'),
-    # ensure they have volunteer records. Others are marked as not completed (cancelled).
-    completed_registrations = []
-    not_completed_count = 0
+    # Get all records that match the IDs and are pending (for approve action)
+    if new_status == 'approved':
+        records = VolunteerRecord.query.filter(
+            VolunteerRecord.id.in_(record_ids),
+            VolunteerRecord.status == 'pending'
+        ).all()
+    else:
+        records = VolunteerRecord.query.filter(VolunteerRecord.id.in_(record_ids)).all()
     
-    for registration in all_registrations:
-        if registration.status == 'completed':
-            # These participants have been confirmed as completed
-            completed_registrations.append(registration)
-        else:
-            # Mark all other participants (approved, registered) as not completed (cancelled)
-            if registration.status in ('approved', 'registered'):
-                registration.status = 'cancelled'
-                not_completed_count += 1
+    if not records:
+        return jsonify({'error': 'No records found'}), 404
     
-    records_created = 0
-    for registration in completed_registrations:
-        # Check if volunteer record already exists
-        existing_record = VolunteerRecord.query.filter_by(
-            user_id=registration.user_id,
-            project_id=project.id
-        ).first()
-        
-        if not existing_record:
-            # Create volunteer record for confirmed participants
-            volunteer_record = VolunteerRecord(
-                user_id=registration.user_id,
-                project_id=project.id,
-                hours=project.duration,
-                points=project.points,
-                status='pending',  # Wait for admin approval
-                completed_at=datetime.utcnow()
-            )
-            db.session.add(volunteer_record)
-            records_created += 1
+    # Update all records
+    updated_count = 0
+    for record in records:
+        record.status = new_status
+        updated_count += 1
     
     db.session.commit()
     
     return jsonify({
-        'success': True,
-        'message': f'Project marked as completed. {records_created} volunteer record(s) created for confirmed participants. {not_completed_count} participant(s) marked as not completed.',
-        'records_created': records_created,
-        'not_completed_count': not_completed_count
+        'updated_count': updated_count,
+        'total_requested': len(record_ids),
+        'status': new_status,
+        'message': f'Successfully updated {updated_count} record(s)'
     })
 
-@bp.route('/api/admin/dashboard-data')
-def api_admin_dashboard_data():
-    if 'user_id' not in session or session.get('user_type') != 'admin':
-        return jsonify({'error': 'Not authenticated'}), 401
+
+# Users Resource
+@bp.route('/api/v1/users', methods=['GET'])
+@login_required
+def api_users_list():
+    """Get users list (admin only, excludes admin users)."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
     
-    # Pending projects for review
-    pending_projects = Project.query.filter_by(status='pending').order_by(Project.created_at.desc()).all()
-    projects_payload = []
-    for project in pending_projects:
-        org = project.organization
-        projects_payload.append({
-            'id': project.id,
-            'title': project.title,
-            'organization_name': org.display_name or org.username if org else 'Unknown',
-            'organization_email': org.email if org else None,
-            'date': project.date.strftime('%Y-%m-%d') if project.date else None,
-            'location': project.location,
-            'max_participants': project.max_participants,
-            'rating': project.rating,
-            'description': project.description,
-            'submitted_date': project.created_at.strftime('%Y-%m-%d') if project.created_at else None
-        })
+    # Exclude admin users
+    users = User.query.filter(User.user_type != 'admin').order_by(User.created_at.desc()).limit(100).all()
     
-    # Pending volunteer records for review
-    pending_records = VolunteerRecord.query.filter_by(status='pending').order_by(VolunteerRecord.completed_at.desc()).all()
-    records_payload = []
-    for record in pending_records:
-        participant = record.user
-        project = record.project
-        org = project.organization if project else None
-        records_payload.append({
-            'id': record.id,
-            'participant_name': participant.display_name or participant.username,
-            'project_name': project.title if project else 'Unknown',
-            'organization_name': org.display_name or org.username if org else 'Unknown',
-            'hours': record.hours,
-            'points': record.points,
-            'completion_date': record.completed_at.strftime('%Y-%m-%d') if record.completed_at else None
-        })
-    
-    # All users
-    users = User.query.order_by(User.created_at.desc()).limit(100).all()
-    users_payload = []
+    result = []
     for u in users:
-        users_payload.append({
+        result.append({
             'id': u.id,
             'username': u.username,
             'display_name': u.display_name,
             'email': u.email,
             'user_type': u.user_type,
+            'is_active': u.is_active if hasattr(u, 'is_active') else True,
             'created_at': u.created_at.strftime('%Y-%m-%d') if u.created_at else None
         })
     
+    return jsonify(result)
+
+@bp.route('/api/v1/users/me', methods=['GET'])
+@login_required
+def api_users_me():
+    """Get current user information."""
     return jsonify({
-        'pending_projects': projects_payload,
-        'pending_records': records_payload,
-        'users': users_payload
+        'id': current_user.id,
+        'username': current_user.username,
+        'display_name': current_user.display_name,
+        'email': current_user.email,
+        'user_type': current_user.user_type,
+        'is_active': current_user.is_active if hasattr(current_user, 'is_active') else True,
+        'created_at': current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else None
     })
 
-@bp.route('/api/admin/approve-project/<int:project_id>', methods=['POST'])
-def api_admin_approve_project(project_id):
-    if 'user_id' not in session or session.get('user_type') != 'admin':
-        return jsonify({'error': 'Not authenticated'}), 401
+@bp.route('/api/v1/users/<int:user_id>', methods=['GET'])
+@login_required
+def api_user_detail(user_id):
+    """Get a single user."""
+    user = User.query.get_or_404(user_id)
+    
+    # Check permissions
+    if current_user.user_type == 'participant' and current_user.id != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    elif current_user.user_type == 'organization' and current_user.id != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'display_name': user.display_name,
+        'email': user.email,
+        'user_type': user.user_type,
+        'is_active': user.is_active if hasattr(user, 'is_active') else True,
+        'created_at': user.created_at.strftime('%Y-%m-%d') if user.created_at else None
+    })
+
+@bp.route('/api/v1/users/<int:user_id>', methods=['PATCH'])
+@login_required
+def api_user_update(user_id):
+    """Update a user (admin only for status changes)."""
+    user = User.query.get_or_404(user_id)
+    data = request.get_json() or {}
+    
+    # Prevent modifying admin users
+    if user.user_type == 'admin':
+        return jsonify({'error': 'Cannot modify admin user'}), 403
+    
+    # Check permissions
+    if current_user.user_type == 'admin':
+        # Admin can update is_active
+        if 'is_active' in data:
+            if hasattr(user, 'is_active'):
+                user.is_active = bool(data['is_active'])
+            else:
+                return jsonify({'error': 'User status feature not available. Database migration required.'}), 500
+    elif current_user.id == user_id:
+        # Users can update their own profile (but not is_active)
+        if 'is_active' in data:
+            return jsonify({'error': 'Cannot modify your own status'}), 403
+        # Allow other profile updates
+        for key in ['display_name', 'description']:
+            if key in data:
+                setattr(user, key, data[key])
+    else:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': user.id,
+        'is_active': user.is_active if hasattr(user, 'is_active') else True,
+        'message': 'User updated successfully'
+    })
+
+
+# Comments Resource
+@bp.route('/api/v1/projects/<int:project_id>/comments', methods=['GET'])
+def api_project_comments_list(project_id):
+    """Get comments for a project."""
+    project = Project.query.get_or_404(project_id)
+    
+    # For now, we use registrations as comments (temporary solution)
+    # In production, create a separate Comment model
+    registrations = Registration.query.filter_by(project_id=project_id).limit(10).all()
+    
+    comments = []
+    for reg in registrations:
+        participant = reg.user
+        comments.append({
+            'id': reg.id,
+            'user_id': reg.user_id,
+            'user_name': participant.display_name or participant.username if participant else 'Unknown',
+            'user_type': participant.user_type.title() if participant else 'Unknown',
+            'comment': f"Looking forward to {project.title}!",
+            'created_at': reg.created_at.strftime('%Y-%m-%d %H:%M') if reg.created_at else None
+        })
+    
+    return jsonify(comments)
+
+@bp.route('/api/v1/projects/<int:project_id>/comments', methods=['POST'])
+@login_required
+def api_project_comments_create(project_id):
+    """Create a comment on a project."""
+    # Admin users are not allowed to comment on projects
+    if current_user.user_type == 'admin':
+        return jsonify({'error': 'Admin users cannot comment on projects', 'requires_login': True}), 403
     
     project = Project.query.get_or_404(project_id)
-    project.status = 'approved'
-    db.session.commit()
-    return jsonify({'success': True})
-
-@bp.route('/api/admin/reject-project/<int:project_id>', methods=['POST'])
-def api_admin_reject_project(project_id):
-    if 'user_id' not in session or session.get('user_type') != 'admin':
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    project = Project.query.get_or_404(project_id)
-    project.status = 'rejected'
-    db.session.commit()
-    return jsonify({'success': True})
-
-@bp.route('/api/admin/approve-record/<int:record_id>', methods=['POST'])
-def api_admin_approve_record(record_id):
-    if 'user_id' not in session or session.get('user_type') != 'admin':
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    record = VolunteerRecord.query.get_or_404(record_id)
-    record.status = 'approved'
-    db.session.commit()
-    return jsonify({'success': True})
-
-@bp.route('/api/admin/reject-record/<int:record_id>', methods=['POST'])
-def api_admin_reject_record(record_id):
-    if 'user_id' not in session or session.get('user_type') != 'admin':
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    record = VolunteerRecord.query.get_or_404(record_id)
-    record.status = 'rejected'
-    db.session.commit()
-    return jsonify({'success': True})
-
-@bp.route('/api/organization/create-project', methods=['POST'])
-def api_organization_create_project():
-    if 'user_id' not in session or session.get('user_type') != 'organization':
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    data = request.form if request.form else request.get_json()
-    
-    project = Project(
-        title=data.get('title'),
-        description=data.get('description'),
-        category=data.get('category'),
-        organization_id=session['user_id'],
-        date=datetime.strptime(data.get('date'), '%Y-%m-%d').date() if data.get('date') else None,
-        location=data.get('location'),
-        max_participants=int(data.get('max_participants', 0)),
-        duration=float(data.get('duration', 0)),
-        points=int(data.get('points', 0)),
-        status='pending',
-        requirements=data.get('requirements', '')
-    )
-    db.session.add(project)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'project_id': project.id})
-
-@bp.route('/api/project/<int:project_id>/comment', methods=['POST'])
-def api_project_comment(project_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    # For now, we'll use registrations as comments
-    # In a full implementation, you'd have a separate Comment model
     data = request.get_json()
     comment_text = data.get('comment', '').strip()
     
@@ -994,7 +1344,7 @@ def api_project_comment(project_id):
     
     # Check if user is registered for this project
     registration = Registration.query.filter_by(
-        user_id=session['user_id'],
+        user_id=current_user.id,
         project_id=project_id
     ).first()
     
@@ -1003,7 +1353,12 @@ def api_project_comment(project_id):
     
     # Store comment in registration (temporary solution)
     # In production, create a Comment model
-    return jsonify({'success': True, 'message': 'Comment functionality will be implemented with Comment model'})
+    return jsonify({
+        'id': registration.id,
+        'project_id': project_id,
+        'message': 'Comment functionality will be implemented with Comment model'
+    }), 201
+
 
 # Development-only: list users to help debug login issues
 @bp.route('/dev/users')

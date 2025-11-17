@@ -156,7 +156,7 @@ function renderRegistrations(registrations) {
 
 async function fetchDashboardData() {
     try {
-        const response = await fetch('/api/participant/dashboard-data');
+        const response = await fetch('/api/v1/users/me/dashboard');
         if (response.status === 401) {
             return { error: 'Please log in as a participant to view dashboard data.' };
         }
@@ -175,7 +175,7 @@ async function loadAvailableProjects() {
     if (!browseContainer) return;
     
     try {
-        const response = await fetch('/api/participant/available-projects');
+        const response = await fetch('/api/v1/projects?status=approved&available=true');
         if (response.status === 401) {
             browseContainer.innerHTML = '<p class="text-gray-500 text-center py-6">Please log in to view available projects.</p>';
             return;
@@ -184,8 +184,13 @@ async function loadAvailableProjects() {
             throw new Error('Failed to load available projects');
         }
         const projects = await response.json();
-        browseContainer.innerHTML = projects.length
-            ? projects.map(project => renderProjectCard(project)).join('')
+        // Transform response to match expected format
+        const transformedProjects = projects.map(p => ({
+            ...p,
+            organization_name: p.organization?.name || p.organization_name
+        }));
+        browseContainer.innerHTML = transformedProjects.length
+            ? transformedProjects.map(project => renderProjectCard(project)).join('')
             : '<p class="text-gray-500 text-center py-6">No projects available to browse.</p>';
     } catch (error) {
         console.error(error);

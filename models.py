@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy import UniqueConstraint
@@ -7,7 +8,7 @@ from sqlalchemy import UniqueConstraint
 db = SQLAlchemy()
 
 # Database Models
-class User(db.Model):
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -15,6 +16,7 @@ class User(db.Model):
     user_type = db.Column(db.String(20), nullable=False)  # participant, organization, admin
     display_name = db.Column(db.String(120))
     description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     projects = relationship('Project', backref='organization', lazy=True)

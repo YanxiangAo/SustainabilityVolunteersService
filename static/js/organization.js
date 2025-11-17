@@ -37,7 +37,7 @@ function getRegistrationStatusMeta(status) {
 
 async function fetchDashboardData() {
     try {
-        const response = await fetch('/api/organization/dashboard-data');
+        const response = await fetch('/api/v1/users/me/dashboard');
         if (response.status === 401) {
             return { error: 'Please log in as an organization to view dashboard data.' };
         }
@@ -185,11 +185,41 @@ async function loadProjects() {
 async function loadRegistrations() {
     // Load all registrations for all projects
     try {
-        const response = await fetch('/api/organization/all-registrations');
-        if (!response.ok) {
-            throw new Error('Failed to load registrations');
+        // First get all projects for this organization
+        const dashboardData = await fetchDashboardData();
+        if (dashboardData.error) {
+            throw new Error(dashboardData.error);
         }
-        const data = await response.json();
+        
+        const projects = dashboardData.projects || [];
+        const projectsWithRegistrations = [];
+        
+        // Load registrations for each project
+        for (const project of projects) {
+            try {
+                const regResponse = await fetch(`/api/v1/projects/${project.id}/registrations`);
+                if (regResponse.ok) {
+                    const registrations = await regResponse.json();
+                    projectsWithRegistrations.push({
+                        project_id: project.id,
+                        project_title: project.title,
+                        project_status: project.status,
+                        registrations: registrations.map(reg => ({
+                            id: reg.id,
+                            participant_name: reg.participant?.name || 'Unknown',
+                            participant_email: reg.participant?.email || '',
+                            registration_date: reg.created_at ? reg.created_at.split(' ')[0] : null,
+                            status: reg.status
+                        })),
+                        total_registrations: registrations.length
+                    });
+                }
+            } catch (err) {
+                console.error(`Failed to load registrations for project ${project.id}:`, err);
+            }
+        }
+        
+        const data = { projects: projectsWithRegistrations };
         
         const container = document.querySelector('#registrations-tab');
         if (!container) return;
@@ -368,13 +398,13 @@ async function loadProjectRegistrations(projectId) {
 async function updateRegistrationStatus(registrationId, status, projectId = null) {
     const actionLabel = status === 'approved' ? 'approve' : status === 'cancelled' ? 'decline' : 'update';
     try {
-        const response = await fetch(`/api/organization/registration/${registrationId}/status`, {
-            method: 'POST',
+        const response = await fetch(`/api/v1/registrations/${registrationId}`, {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
         });
         const result = await response.json();
-        if (!response.ok || !result.success) {
+        if (!response.ok) {
             throw new Error(result.error || `Unable to ${actionLabel} registration.`);
         }
         
@@ -403,13 +433,13 @@ async function confirmCompletion(registrationId, projectId = null) {
     }
     
     try {
-        const response = await fetch(`/api/organization/registration/${registrationId}/status`, {
-            method: 'POST',
+        const response = await fetch(`/api/v1/registrations/${registrationId}`, {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'completed' })
         });
         const result = await response.json();
-        if (!response.ok || !result.success) {
+        if (!response.ok) {
             throw new Error(result.error || 'Unable to confirm completion.');
         }
         
@@ -440,12 +470,13 @@ async function completeProject(projectId) {
     }
     
     try {
-        const response = await fetch(`/api/organization/project/${projectId}/complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        const response = await fetch(`/api/v1/projects/${projectId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'completed' })
         });
         const result = await response.json();
-        if (!response.ok || !result.success) {
+        if (!response.ok) {
             throw new Error(result.error || 'Unable to complete project.');
         }
         alert(result.message || 'Project marked as completed successfully.');
@@ -465,13 +496,13 @@ async function markAsNotCompleted(registrationId, projectId = null) {
     }
     
     try {
-        const response = await fetch(`/api/organization/registration/${registrationId}/status`, {
-            method: 'POST',
+        const response = await fetch(`/api/v1/registrations/${registrationId}`, {
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: 'cancelled' })
         });
         const result = await response.json();
-        if (!response.ok || !result.success) {
+        if (!response.ok) {
             throw new Error(result.error || 'Unable to mark as not completed.');
         }
         
@@ -516,13 +547,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const formData = new FormData(this);
             try {
-                const response = await fetch('/api/organization/create-project', {
-                    method: 'POST',
-                    body: formData
-                });
+            const response = await fetch('/api/v1/projects', {
+                method: 'POST',
+                body: formData
+            });
                 
                 const result = await response.json();
-                if (result.success) {
+                if (response.ok || response.status === 201) {
                     alert('Project submitted successfully! It will be reviewed by an administrator.');
                     this.reset();
                     loadProjects();

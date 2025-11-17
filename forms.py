@@ -6,6 +6,7 @@ class LoginForm:
     username_or_email: str
     password: str
     user_type: str
+    remember: bool = False
 
 @dataclass
 class RegisterForm:
@@ -19,6 +20,7 @@ def parse_login_form(request) -> LoginForm:
         username_or_email=(request.form.get('username') or '').strip(),
         password=(request.form.get('password') or '').strip(),
         user_type=((request.form.get('user_type') or '').strip().lower()),
+        remember=bool(request.form.get('remember')),
     )
 
 def parse_register_form(request) -> RegisterForm:

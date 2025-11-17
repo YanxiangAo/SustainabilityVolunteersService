@@ -69,11 +69,16 @@ function renderProjectCard(project) {
 
 async function fetchProjects() {
     try {
-        const response = await fetch('/api/projects');
+        const response = await fetch('/api/v1/projects?status=approved&available=true');
         if (!response.ok) {
             throw new Error('Failed to load projects');
         }
-        return await response.json();
+        const projects = await response.json();
+        // Transform response to match expected format
+        return projects.map(p => ({
+            ...p,
+            organization_name: p.organization?.name || p.organization_name
+        }));
     } catch (error) {
         console.error(error);
         return [];

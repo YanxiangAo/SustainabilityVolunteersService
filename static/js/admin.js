@@ -22,7 +22,7 @@ document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
 
 async function fetchDashboardData() {
     try {
-        const response = await fetch('/api/admin/dashboard-data');
+        const response = await fetch('/api/v1/users/me/dashboard');
         if (response.status === 401) {
             return { error: 'Please log in as an administrator to view dashboard data.' };
         }
@@ -139,6 +139,7 @@ function renderPendingRecords(records) {
     
     if (!records.length) {
         container.innerHTML = '<p class="text-gray-500 text-center py-8">No pending hour records to review.</p>';
+        updateBatchApproveButton(0);
         return;
     }
     
@@ -147,7 +148,7 @@ function renderPendingRecords(records) {
             <thead>
                 <tr>
                     <th style="width: 3rem;">
-                        <input type="checkbox" style="width: 1rem; height: 1rem;">
+                        <input type="checkbox" id="select-all-records" style="width: 1rem; height: 1rem;">
                     </th>
                     <th>Participant</th>
                     <th>Project Name</th>
@@ -161,7 +162,7 @@ function renderPendingRecords(records) {
             <tbody>
                 ${records.map(record => `
                     <tr>
-                        <td><input type="checkbox" style="width: 1rem; height: 1rem;"></td>
+                        <td><input type="checkbox" class="record-checkbox" data-record-id="${record.id}" style="width: 1rem; height: 1rem;"></td>
                         <td>${record.participant_name}</td>
                         <td>${record.project_name}</td>
                         <td class="text-sm text-gray-600">${record.organization_name}</td>
@@ -192,6 +193,103 @@ function renderPendingRecords(records) {
     `;
     
     container.innerHTML = tableHTML;
+    
+    // Setup select all checkbox
+    const selectAllCheckbox = document.getElementById('select-all-records');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateBatchApproveButton();
+        });
+    }
+    
+    // Setup individual checkbox change handlers
+    const checkboxes = document.querySelectorAll('.record-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBatchApproveButton();
+            updateSelectAllCheckbox();
+        });
+    });
+    
+    updateBatchApproveButton(0);
+}
+
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('select-all-records');
+    if (!selectAllCheckbox) return;
+    
+    const checkboxes = document.querySelectorAll('.record-checkbox');
+    const checkedCount = document.querySelectorAll('.record-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === checkboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function updateBatchApproveButton(count) {
+    const button = document.querySelector('#hours-review-tab .btn-primary');
+    if (!button) return;
+    
+    if (count !== undefined) {
+        button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Batch Approve (${count})
+        `;
+    } else {
+        const checkedCount = document.querySelectorAll('.record-checkbox:checked').length;
+        button.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            Batch Approve (${checkedCount})
+        `;
+    }
+}
+
+async function batchApproveRecords() {
+    const checkedBoxes = document.querySelectorAll('.record-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Please select at least one record to approve.');
+        return;
+    }
+    
+    const recordIds = Array.from(checkedBoxes).map(cb => parseInt(cb.getAttribute('data-record-id')));
+    
+    if (!confirm(`Are you sure you want to approve ${recordIds.length} hour record(s)?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/v1/records/batch', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ record_ids: recordIds, status: 'approved' })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert(`Successfully approved ${result.updated_count} hour record(s)!`);
+            loadPendingRecords();
+        } else {
+            alert('Error: ' + (result.error || 'Failed to approve records'));
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Error approving records. Please try again.');
+    }
 }
 
 function renderUsers(users) {
@@ -216,26 +314,63 @@ function renderUsers(users) {
                 </tr>
             </thead>
             <tbody>
-                ${users.map(user => `
+                ${users.map(user => {
+                    const isActive = user.is_active !== false; // Default to true if not set
+                    return `
                     <tr>
                         <td>${user.display_name || user.username}</td>
                         <td><span class="badge badge-secondary">${user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1)}</span></td>
                         <td class="text-sm text-gray-600">${user.email}</td>
-                        <td><span class="badge badge-success">Active</span></td>
+                        <td>
+                            ${isActive 
+                                ? '<span class="badge badge-success">Active</span>' 
+                                : '<span class="badge" style="background-color: #ef4444; color: white;">Disabled</span>'}
+                        </td>
                         <td class="text-sm text-gray-600">${user.created_at || 'N/A'}</td>
                         <td>
                             <div class="flex gap-2">
                                 <button class="btn btn-outline btn-sm">View</button>
-                                <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
+                                ${isActive
+                                    ? `<button class="btn btn-outline btn-sm" style="color: #ef4444;" onclick="toggleUserStatus(${user.id}, false)">Disable</button>`
+                                    : `<button class="btn btn-outline btn-sm" style="color: var(--primary-green);" onclick="toggleUserStatus(${user.id}, true)">Enable</button>`}
                             </div>
                         </td>
                     </tr>
-                `).join('')}
+                `;
+                }).join('')}
             </tbody>
         </table>
     `;
     
     container.innerHTML = tableHTML;
+}
+
+async function toggleUserStatus(userId, enable) {
+    const action = enable ? 'enable' : 'disable';
+    if (!confirm(`Are you sure you want to ${action} this user?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/v1/users/${userId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ is_active: enable })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert(`User ${enable ? 'enabled' : 'disabled'} successfully!`);
+            loadUsers();
+        } else {
+            alert('Error: ' + (result.error || `Failed to ${action} user`));
+        }
+    } catch (error) {
+        console.error(error);
+        alert(`Error ${action}ing user. Please try again.`);
+    }
 }
 
 async function loadPendingProjects() {
@@ -269,9 +404,15 @@ async function approveProject(projectId) {
     if (!confirm('Are you sure you want to approve this project?')) return;
     
     try {
-        const response = await fetch(`/api/admin/approve-project/${projectId}`, { method: 'POST' });
+        const response = await fetch(`/api/v1/projects/${projectId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'approved' })
+        });
         const result = await response.json();
-        if (result.success) {
+        if (response.ok) {
             alert('Project approved successfully!');
             loadPendingProjects();
         } else {
@@ -287,9 +428,15 @@ async function rejectProject(projectId) {
     if (!confirm('Are you sure you want to reject this project?')) return;
     
     try {
-        const response = await fetch(`/api/admin/reject-project/${projectId}`, { method: 'POST' });
+        const response = await fetch(`/api/v1/projects/${projectId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'rejected' })
+        });
         const result = await response.json();
-        if (result.success) {
+        if (response.ok) {
             alert('Project rejected.');
             loadPendingProjects();
         } else {
@@ -305,9 +452,15 @@ async function approveRecord(recordId) {
     if (!confirm('Are you sure you want to approve this hour record?')) return;
     
     try {
-        const response = await fetch(`/api/admin/approve-record/${recordId}`, { method: 'POST' });
+        const response = await fetch(`/api/v1/records/${recordId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'approved' })
+        });
         const result = await response.json();
-        if (result.success) {
+        if (response.ok) {
             alert('Hour record approved successfully!');
             loadPendingRecords();
         } else {
@@ -323,9 +476,15 @@ async function rejectRecord(recordId) {
     if (!confirm('Are you sure you want to reject this hour record?')) return;
     
     try {
-        const response = await fetch(`/api/admin/reject-record/${recordId}`, { method: 'POST' });
+        const response = await fetch(`/api/v1/records/${recordId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'rejected' })
+        });
         const result = await response.json();
-        if (result.success) {
+        if (response.ok) {
             alert('Hour record rejected.');
             loadPendingRecords();
         } else {

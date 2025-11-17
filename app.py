@@ -1,11 +1,28 @@
 # Flask Backend for Sustainable Volunteer Service Platform
 
 from flask import Flask
+from flask_login import LoginManager
+from flask_migrate import Migrate
 from config import Config
 from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord
 from routes import bp
 from sqlalchemy import text, inspect
 from datetime import date, datetime
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.login_view = 'main.login'
+login_manager.login_message = 'Please log in to access this page.'
+login_manager.login_message_category = 'info'
+
+# Initialize Flask-Migrate
+migrate = Migrate()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login"""
+    return User.query.get(int(user_id))
 
 
 def create_app() -> Flask:
@@ -14,6 +31,8 @@ def create_app() -> Flask:
 
     # Initialize extensions
     db.init_app(app)
+    login_manager.init_app(app)
+    migrate.init_app(app, db)
 
     # Register blueprints
     app.register_blueprint(bp)
@@ -49,6 +68,9 @@ def init_db(app: Flask) -> None:
         if not admin:
             admin = User(username='admin', email='admin@example.com', user_type='admin')
             admin.set_password('admin123')  # Change this password!
+            # Set is_active for new admin user
+            if hasattr(admin, 'is_active'):
+                admin.is_active = True
             db.session.add(admin)
             db.session.commit()
 
