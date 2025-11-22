@@ -527,8 +527,140 @@ async function markAsNotCompleted(registrationId, projectId = null) {
     }
 }
 
+// Display name editing functionality
+let originalDisplayName = '';
+
+function initDisplayNameEditor() {
+    const editBtn = document.getElementById('edit-display-name-btn');
+    const saveBtn = document.getElementById('save-display-name-btn');
+    const cancelBtn = document.getElementById('cancel-display-name-btn');
+    const input = document.getElementById('display-name-input');
+    const messageEl = document.getElementById('display-name-message');
+
+    if (!editBtn || !saveBtn || !cancelBtn || !input) return;
+
+    // Get current user ID from the page (we'll need to fetch it)
+    let currentUserId = null;
+
+    // Fetch current user info to get user ID
+    fetch('/api/v1/users/me')
+        .then(res => res.json())
+        .then(user => {
+            currentUserId = user.id;
+            originalDisplayName = user.display_name || '';
+            if (input && !input.value && originalDisplayName) {
+                input.value = originalDisplayName;
+            }
+        })
+        .catch(err => console.error('Failed to fetch user info:', err));
+
+    editBtn.addEventListener('click', function() {
+        originalDisplayName = input.value;
+        input.disabled = false;
+        input.style.backgroundColor = 'white';
+        input.style.borderColor = 'var(--secondary-blue)';
+        input.focus();
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-flex';
+        cancelBtn.style.display = 'inline-flex';
+        messageEl.style.display = 'none';
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        input.value = originalDisplayName;
+        input.disabled = true;
+        input.style.backgroundColor = 'var(--gray-100)';
+        input.style.borderColor = 'var(--gray-300)';
+        editBtn.style.display = 'inline-flex';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        messageEl.style.display = 'none';
+    });
+
+    saveBtn.addEventListener('click', async function() {
+        const newDisplayName = input.value.trim();
+        
+        if (!currentUserId) {
+            showMessage('Error: User ID not found. Please refresh the page.', 'error');
+            return;
+        }
+
+        // Disable buttons during save
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const response = await fetch(`/api/v1/users/${currentUserId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    display_name: newDisplayName || null
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                originalDisplayName = newDisplayName;
+                input.disabled = true;
+                input.style.backgroundColor = 'var(--gray-100)';
+                input.style.borderColor = 'var(--gray-300)';
+                editBtn.style.display = 'inline-flex';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                
+                showMessage('Organization name updated successfully!', 'success');
+                
+                // Update sidebar display
+                const sidebarUsername = document.getElementById('sidebar-username');
+                if (sidebarUsername) {
+                    sidebarUsername.textContent = newDisplayName || document.querySelector('#display-name-input').placeholder;
+                }
+            } else {
+                const error = await response.json();
+                showMessage(error.error || 'Failed to update organization name', 'error');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        } catch (error) {
+            console.error('Error updating organization name:', error);
+            showMessage('Failed to update organization name. Please try again.', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    });
+
+    function showMessage(text, type) {
+        const messageEl = document.getElementById('display-name-message');
+        if (!messageEl) return;
+        
+        messageEl.textContent = text;
+        messageEl.style.display = 'block';
+        messageEl.style.color = type === 'success' ? 'var(--secondary-blue)' : 'var(--accent-orange)';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    // Allow Enter key to save
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !input.disabled) {
+            saveBtn.click();
+        }
+    });
+}
+
 // Handle project creation form
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize display name editor
+    initDisplayNameEditor();
+
     // Load dashboard data
     fetchDashboardData().then(data => {
         if (!data.error && data.statistics) {
@@ -539,6 +671,139 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Draft management functions
+    const DRAFT_STORAGE_KEY = 'project_draft';
+    
+    function saveDraft() {
+        const form = document.querySelector('form[action="/api/create-project"]');
+        if (!form) return;
+        
+        const draftData = {
+            title: document.getElementById('project-title')?.value || '',
+            category: document.getElementById('project-category')?.value || '',
+            category_other: document.getElementById('project-category-other')?.value || '',
+            description: document.getElementById('project-description')?.value || '',
+            date: document.getElementById('project-date')?.value || '',
+            location: document.getElementById('project-location')?.value || '',
+            max_participants: document.getElementById('project-participants')?.value || '',
+            duration: document.getElementById('project-duration')?.value || '',
+            points: document.getElementById('project-points')?.value || '',
+            requirements: document.getElementById('project-requirements')?.value || '',
+            saved_at: new Date().toISOString()
+        };
+        
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        alert('Draft saved successfully!');
+    }
+    
+    function loadDraft() {
+        const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
+        if (!draftJson) return null;
+        
+        try {
+            return JSON.parse(draftJson);
+        } catch (e) {
+            console.error('Error parsing draft:', e);
+            return null;
+        }
+    }
+    
+    function clearDraft() {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+    
+    function restoreDraft(draftData) {
+        if (!draftData) return;
+        
+        const titleEl = document.getElementById('project-title');
+        const categoryEl = document.getElementById('project-category');
+        const categoryOtherEl = document.getElementById('project-category-other');
+        const descriptionEl = document.getElementById('project-description');
+        const dateEl = document.getElementById('project-date');
+        const locationEl = document.getElementById('project-location');
+        const participantsEl = document.getElementById('project-participants');
+        const durationEl = document.getElementById('project-duration');
+        const pointsEl = document.getElementById('project-points');
+        const requirementsEl = document.getElementById('project-requirements');
+        
+        if (titleEl) titleEl.value = draftData.title || '';
+        if (descriptionEl) descriptionEl.value = draftData.description || '';
+        if (dateEl) dateEl.value = draftData.date || '';
+        if (locationEl) locationEl.value = draftData.location || '';
+        if (participantsEl) participantsEl.value = draftData.max_participants || '';
+        if (durationEl) durationEl.value = draftData.duration || '';
+        if (pointsEl) pointsEl.value = draftData.points || '';
+        if (requirementsEl) requirementsEl.value = draftData.requirements || '';
+        
+        // Handle category
+        if (categoryEl) {
+            if (draftData.category === 'other') {
+                categoryEl.value = 'other';
+                if (categoryOtherEl) {
+                    categoryOtherEl.style.display = 'block';
+                    categoryOtherEl.required = true;
+                    categoryOtherEl.value = draftData.category_other || '';
+                }
+            } else {
+                categoryEl.value = draftData.category || '';
+                if (categoryOtherEl) {
+                    categoryOtherEl.style.display = 'none';
+                    categoryOtherEl.required = false;
+                }
+            }
+        }
+    }
+    
+    function checkAndPromptDraft() {
+        const draftData = loadDraft();
+        if (!draftData) return;
+        
+        // Check if draft has meaningful content
+        const hasContent = draftData.title || draftData.description || draftData.location;
+        if (!hasContent) {
+            clearDraft();
+            return;
+        }
+        
+        // Show prompt
+        const savedDate = new Date(draftData.saved_at);
+        const savedDateStr = savedDate.toLocaleString();
+        
+        if (confirm(`You have a saved draft from ${savedDateStr}.\n\nWould you like to restore it?`)) {
+            restoreDraft(draftData);
+        } else {
+            // Ask if user wants to discard the draft
+            if (confirm('Do you want to discard the saved draft?')) {
+                clearDraft();
+            }
+        }
+    }
+    
+    // Handle category "Other" option
+    const categorySelect = document.getElementById('project-category');
+    const categoryOtherInput = document.getElementById('project-category-other');
+    
+    if (categorySelect && categoryOtherInput) {
+        categorySelect.addEventListener('change', function() {
+            if (this.value === 'other') {
+                categoryOtherInput.style.display = 'block';
+                categoryOtherInput.required = true;
+            } else {
+                categoryOtherInput.style.display = 'none';
+                categoryOtherInput.required = false;
+                categoryOtherInput.value = '';
+            }
+        });
+    }
+    
+    // Handle Save Draft button
+    const saveDraftBtn = document.getElementById('save-draft-btn');
+    if (saveDraftBtn) {
+        saveDraftBtn.addEventListener('click', function() {
+            saveDraft();
+        });
+    }
+    
     // Handle project creation form
     const createForm = document.querySelector('form[action="/api/create-project"]');
     if (createForm) {
@@ -546,6 +811,23 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             const formData = new FormData(this);
+            
+            // If "other" is selected, use the custom input value
+            const categorySelect = document.getElementById('project-category');
+            const categoryOtherInput = document.getElementById('project-category-other');
+            
+            if (categorySelect && categorySelect.value === 'other' && categoryOtherInput) {
+                const customCategory = categoryOtherInput.value.trim();
+                if (!customCategory) {
+                    alert('Please specify the category when selecting "Other"');
+                    return;
+                }
+                formData.set('category', customCategory);
+                formData.delete('category_other');
+            } else {
+                formData.delete('category_other');
+            }
+            
             try {
             const response = await fetch('/api/v1/projects', {
                 method: 'POST',
@@ -554,8 +836,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const result = await response.json();
                 if (response.ok || response.status === 201) {
+                    // Clear draft on successful submission
+                    clearDraft();
                     alert('Project submitted successfully! It will be reviewed by an administrator.');
                     this.reset();
+                    // Reset category other input visibility
+                    if (categoryOtherInput) {
+                        categoryOtherInput.style.display = 'none';
+                        categoryOtherInput.required = false;
+                    }
                     loadProjects();
                 } else {
                     alert('Error: ' + (result.error || 'Failed to create project'));
@@ -565,6 +854,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Error creating project. Please try again.');
             }
         });
+    }
+    
+    // Check for draft when switching to publish tab
+    document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+        item.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            if (tabName === 'publish') {
+                // Small delay to ensure form is visible
+                setTimeout(() => {
+                    checkAndPromptDraft();
+                }, 100);
+            }
+        });
+    });
+    
+    // Check for draft on initial page load if publish tab is active
+    const publishTab = document.getElementById('publish-tab');
+    if (publishTab && publishTab.classList.contains('active')) {
+        setTimeout(() => {
+            checkAndPromptDraft();
+        }, 300);
     }
 });
 

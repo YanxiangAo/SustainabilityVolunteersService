@@ -4,7 +4,7 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
-from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord
+from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment
 from routes import bp
 from sqlalchemy import text, inspect
 from datetime import date, datetime
@@ -62,6 +62,14 @@ def create_app() -> Flask:
 def init_db(app: Flask) -> None:
     with app.app_context():
         db.create_all()
+        
+        # Initialize default system settings if they don't exist
+        if not SystemSettings.query.filter_by(key='points_per_hour').first():
+            SystemSettings.set_setting('points_per_hour', '20')
+        if not SystemSettings.query.filter_by(key='auto_approve_under_hours').first():
+            SystemSettings.set_setting('auto_approve_under_hours', 'false')
+        if not SystemSettings.query.filter_by(key='project_requires_review').first():
+            SystemSettings.set_setting('project_requires_review', 'true')
 
         # Create admin user if it doesn't exist
         admin = User.query.filter_by(username='admin').first()

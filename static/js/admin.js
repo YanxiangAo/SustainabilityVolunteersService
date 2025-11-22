@@ -496,9 +496,146 @@ async function rejectRecord(recordId) {
     }
 }
 
+// System Settings Functions
+async function loadSettings() {
+    try {
+        const response = await fetch('/api/v1/admin/settings');
+        if (!response.ok) {
+            throw new Error('Failed to load settings');
+        }
+        const settings = await response.json();
+        
+        // Load points per hour
+        const pointsInput = document.getElementById('points-per-hour-input');
+        if (pointsInput) {
+            pointsInput.value = settings.points_per_hour || '20';
+        }
+        
+        // Load auto-approve setting
+        const autoApproveCheckbox = document.getElementById('auto-approve-checkbox');
+        if (autoApproveCheckbox) {
+            autoApproveCheckbox.checked = settings.auto_approve_under_hours === 'true';
+        }
+        
+        // Load project review requirement
+        const projectReviewCheckbox = document.getElementById('project-review-checkbox');
+        if (projectReviewCheckbox) {
+            projectReviewCheckbox.checked = settings.project_requires_review === 'true';
+        }
+    } catch (error) {
+        console.error('Error loading settings:', error);
+    }
+}
+
+async function savePointsSettings() {
+    const pointsInput = document.getElementById('points-per-hour-input');
+    if (!pointsInput) return;
+    
+    const points = parseInt(pointsInput.value);
+    if (isNaN(points) || points < 1) {
+        alert('Please enter a valid number (at least 1) for points per hour.');
+        return;
+    }
+    
+    const saveBtn = document.getElementById('save-points-settings-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    
+    try {
+        const response = await fetch('/api/v1/admin/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                points_per_hour: points
+            })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Points settings saved successfully!');
+        } else {
+            alert('Error: ' + (result.error || 'Failed to save settings'));
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Error saving settings. Please try again.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    }
+}
+
+async function saveReviewSettings() {
+    const autoApproveCheckbox = document.getElementById('auto-approve-checkbox');
+    const projectReviewCheckbox = document.getElementById('project-review-checkbox');
+    
+    if (!autoApproveCheckbox || !projectReviewCheckbox) return;
+    
+    const saveBtn = document.getElementById('save-review-settings-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    
+    try {
+        const response = await fetch('/api/v1/admin/settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                auto_approve_under_hours: autoApproveCheckbox.checked,
+                project_requires_review: projectReviewCheckbox.checked
+            })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Review settings saved successfully!');
+        } else {
+            alert('Error: ' + (result.error || 'Failed to save settings'));
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Error saving settings. Please try again.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    }
+}
+
 // Load data on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadPendingProjects();
+    
+    // Load settings when switching to settings tab
+    document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+        item.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            if (tabName === 'settings') {
+                loadSettings();
+            }
+        });
+    });
+    
+    // Load settings if settings tab is active on page load
+    const settingsTab = document.getElementById('settings-tab');
+    if (settingsTab && settingsTab.classList.contains('active')) {
+        loadSettings();
+    }
+    
+    // Setup save buttons
+    const savePointsBtn = document.getElementById('save-points-settings-btn');
+    if (savePointsBtn) {
+        savePointsBtn.addEventListener('click', savePointsSettings);
+    }
+    
+    const saveReviewBtn = document.getElementById('save-review-settings-btn');
+    if (saveReviewBtn) {
+        saveReviewBtn.addEventListener('click', saveReviewSettings);
+    }
 });
 
 

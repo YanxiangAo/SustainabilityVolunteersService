@@ -18,7 +18,7 @@
                 </div>
                 <div>
                     <div>Organization</div>
-                    <div class="text-sm text-gray-500">{{ user.username }}</div>
+                    <div class="text-sm text-gray-500" id="sidebar-username">{{ user.display_name or user.username }}</div>
                 </div>
             </div>
         </div>
@@ -72,6 +72,54 @@
             <div class="mb-8">
                 <h2>Overview</h2>
                 <p class="text-gray-600">View your organization's project statistics</p>
+            </div>
+
+            <!-- Profile Information Section -->
+            <div class="card mb-8">
+                <div class="card-header">
+                    <h3 style="margin: 0;">Profile</h3>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-cols-2" style="gap: 1.5rem;">
+                        <!-- Display Name -->
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--gray-700); font-size: 0.875rem;">Organization Name</label>
+                            <div class="flex items-center gap-2" id="display-name-container">
+                                <input 
+                                    type="text" 
+                                    id="display-name-input" 
+                                    value="{{ user.display_name or '' }}" 
+                                    placeholder="{{ user.username }}"
+                                    disabled
+                                    style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); font-size: 0.875rem; background-color: var(--gray-100); transition: all 0.2s;"
+                                    maxlength="120"
+                                />
+                                <button id="save-display-name-btn" class="btn btn-primary" style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Save</button>
+                                <button id="cancel-display-name-btn" class="btn btn-outline" style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Cancel</button>
+                                <button id="edit-display-name-btn" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="display-name-message" style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
+                        </div>
+                        
+                        <!-- Account Info -->
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem; color: var(--gray-700); font-size: 0.875rem;">Account</label>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div style="padding: 0.5rem 0.75rem; background-color: var(--gray-50); border-radius: var(--border-radius); font-size: 0.875rem;">
+                                    <span style="color: var(--gray-500);">Username:</span> <span style="color: var(--gray-700); font-weight: 500;">{{ user.username }}</span>
+                                </div>
+                                <div style="padding: 0.5rem 0.75rem; background-color: var(--gray-50); border-radius: var(--border-radius); font-size: 0.875rem;">
+                                    <span style="color: var(--gray-500);">Email:</span> <span style="color: var(--gray-700); font-weight: 500;">{{ user.email }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-4 mb-8">
@@ -163,7 +211,23 @@
                             </div>
                             <div class="form-group">
                                 <label for="project-category">Category *</label>
-                                <input type="text" id="project-category" name="category" placeholder="e.g. Environmental, Education, Care" required>
+                                <select id="project-category" name="category" required>
+                                    <option value="">Select a category</option>
+                                    <option value="Ecological Protection & Green Living">Ecological Protection & Green Living</option>
+                                    <option value="Quality Education & Cultural Heritage">Quality Education & Cultural Heritage</option>
+                                    <option value="Community Building & Social Inclusion">Community Building & Social Inclusion</option>
+                                    <option value="Health & Well-being">Health & Well-being</option>
+                                    <option value="Rural Revitalization & Urban-Rural Integration">Rural Revitalization & Urban-Rural Integration</option>
+                                    <option value="Emergency Response & Relief">Emergency Response & Relief</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <input 
+                                    type="text" 
+                                    id="project-category-other" 
+                                    name="category_other" 
+                                    placeholder="Please specify the category"
+                                    style="margin-top: 0.5rem; display: none; width: 100%; padding: 0.625rem 0.875rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); font-size: 0.875rem;"
+                                />
                             </div>
                         </div>
 
@@ -198,9 +262,15 @@
                             </div>
                         </div>
 
+                        <div class="form-group">
+                            <label for="project-requirements">Requirements</label>
+                            <textarea id="project-requirements" name="requirements" placeholder="Specify any requirements for participants (e.g. age restrictions, skills needed, equipment required, etc.)" rows="4"></textarea>
+                            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray-500);">Optional: List any specific requirements or qualifications needed for volunteers</p>
+                        </div>
+
                         <div class="flex gap-4 pt-4">
                             <button type="submit" class="btn btn-secondary">Submit for Approval</button>
-                            <button type="button" class="btn btn-outline">Save Draft</button>
+                            <button type="button" id="save-draft-btn" class="btn btn-outline">Save Draft</button>
                         </div>
                     </form>
                 </div>

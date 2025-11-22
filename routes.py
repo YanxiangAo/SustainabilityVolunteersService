@@ -6,7 +6,7 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
-from models import db, User, Project, Registration, VolunteerRecord, Badge, UserBadge
+from models import db, User, Project, Registration, VolunteerRecord, Badge, UserBadge, SystemSettings, Comment
 from forms import parse_login_form, parse_register_form
 
 bp = Blueprint('main', __name__)
@@ -151,27 +151,44 @@ def project_detail(project_id):
         Registration.project_id == project.id,
         Registration.status.in_(active_statuses)
     ).count()
-    # Get comments/registrations for display
-    registrations = Registration.query.filter_by(project_id=project.id).limit(5).all()
+    # Get comments for display
+    comments = Comment.query.filter_by(project_id=project.id).order_by(Comment.created_at.desc()).limit(20).all()
+    comments_data = []
+    for comment in comments:
+        comments_data.append({
+            'id': comment.id,
+            'user_name': comment.user.display_name or comment.user.username if comment.user else 'Unknown',
+            'user_type': comment.user.user_type.title() if comment.user else 'Unknown',
+            'comment': comment.content,
+            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else None
+        })
     
-    # Check if current user is registered
+    # Check if current user is registered or is the organization owner
     is_registered = False
+    can_comment = False
     user_type = None
     if current_user.is_authenticated:
         user_type = current_user.user_type
-        existing_reg = Registration.query.filter(
-            Registration.user_id == current_user.id,
-            Registration.project_id == project.id,
-            Registration.status.in_(active_statuses + ('completed',))
-        ).first()
-        is_registered = existing_reg is not None
+        # Check if user is registered (for participants)
+        if user_type == 'participant':
+            existing_reg = Registration.query.filter(
+                Registration.user_id == current_user.id,
+                Registration.project_id == project.id,
+                Registration.status.in_(active_statuses + ('completed',))
+            ).first()
+            is_registered = existing_reg is not None
+            can_comment = is_registered
+        # Organization owner can always comment on their own projects
+        elif user_type == 'organization':
+            can_comment = (project.organization_id == current_user.id)
     
     return render_template('project_detail.html', 
                          project=project, 
                          organization=organization,
                          registration_count=registration_count,
-                         registrations=registrations,
+                         comments=comments_data,
                          is_registered=is_registered,
+                         can_comment=can_comment,
                          user_type=user_type)
 
 @bp.route('/demo/project')
@@ -1309,23 +1326,20 @@ def api_project_comments_list(project_id):
     """Get comments for a project."""
     project = Project.query.get_or_404(project_id)
     
-    # For now, we use registrations as comments (temporary solution)
-    # In production, create a separate Comment model
-    registrations = Registration.query.filter_by(project_id=project_id).limit(10).all()
+    comments = Comment.query.filter_by(project_id=project_id).order_by(Comment.created_at.desc()).all()
     
-    comments = []
-    for reg in registrations:
-        participant = reg.user
-        comments.append({
-            'id': reg.id,
-            'user_id': reg.user_id,
-            'user_name': participant.display_name or participant.username if participant else 'Unknown',
-            'user_type': participant.user_type.title() if participant else 'Unknown',
-            'comment': f"Looking forward to {project.title}!",
-            'created_at': reg.created_at.strftime('%Y-%m-%d %H:%M') if reg.created_at else None
+    comments_data = []
+    for comment in comments:
+        comments_data.append({
+            'id': comment.id,
+            'user_id': comment.user_id,
+            'user_name': comment.user.display_name or comment.user.username if comment.user else 'Unknown',
+            'user_type': comment.user.user_type.title() if comment.user else 'Unknown',
+            'comment': comment.content,
+            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else None
         })
     
-    return jsonify(comments)
+    return jsonify(comments_data)
 
 @bp.route('/api/v1/projects/<int:project_id>/comments', methods=['POST'])
 @login_required
@@ -1333,7 +1347,7 @@ def api_project_comments_create(project_id):
     """Create a comment on a project."""
     # Admin users are not allowed to comment on projects
     if current_user.user_type == 'admin':
-        return jsonify({'error': 'Admin users cannot comment on projects', 'requires_login': True}), 403
+        return jsonify({'error': 'Admin users cannot comment on projects'}), 403
     
     project = Project.query.get_or_404(project_id)
     data = request.get_json()
@@ -1342,23 +1356,94 @@ def api_project_comments_create(project_id):
     if not comment_text:
         return jsonify({'error': 'Comment cannot be empty'}), 400
     
-    # Check if user is registered for this project
-    registration = Registration.query.filter_by(
+    # Check permissions: participants must be registered, organizations can comment on their own projects
+    can_comment = False
+    if current_user.user_type == 'participant':
+        # Participant must be registered for the project
+        registration = Registration.query.filter(
+            Registration.user_id == current_user.id,
+            Registration.project_id == project_id,
+            Registration.status.in_(('registered', 'approved', 'completed'))
+        ).first()
+        can_comment = registration is not None
+    elif current_user.user_type == 'organization':
+        # Organization can comment on their own projects
+        can_comment = (project.organization_id == current_user.id)
+    
+    if not can_comment:
+        if current_user.user_type == 'participant':
+            return jsonify({'error': 'You must be registered for this project to comment'}), 403
+        else:
+            return jsonify({'error': 'You can only comment on your own projects'}), 403
+    
+    # Create comment
+    comment = Comment(
+        project_id=project_id,
         user_id=current_user.id,
-        project_id=project_id
-    ).first()
+        content=comment_text
+    )
+    db.session.add(comment)
+    db.session.commit()
     
-    if not registration:
-        return jsonify({'error': 'You must be registered for this project to comment'}), 403
-    
-    # Store comment in registration (temporary solution)
-    # In production, create a Comment model
     return jsonify({
-        'id': registration.id,
+        'id': comment.id,
         'project_id': project_id,
-        'message': 'Comment functionality will be implemented with Comment model'
+        'user_name': current_user.display_name or current_user.username,
+        'user_type': current_user.user_type.title(),
+        'comment': comment.content,
+        'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else None,
+        'message': 'Comment posted successfully'
     }), 201
 
+
+# System Settings API
+@bp.route('/api/v1/admin/settings', methods=['GET'])
+@login_required
+def api_get_settings():
+    """Get system settings."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    settings = {
+        'points_per_hour': SystemSettings.get_setting('points_per_hour', '20'),
+        'auto_approve_under_hours': SystemSettings.get_setting('auto_approve_under_hours', 'false'),
+        'project_requires_review': SystemSettings.get_setting('project_requires_review', 'true')
+    }
+    
+    return jsonify(settings)
+
+@bp.route('/api/v1/admin/settings', methods=['POST'])
+@login_required
+def api_save_settings():
+    """Save system settings."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json() or {}
+    
+    # Save points per hour
+    if 'points_per_hour' in data:
+        points = int(data['points_per_hour'])
+        if points < 1:
+            return jsonify({'error': 'Points per hour must be at least 1'}), 400
+        SystemSettings.set_setting('points_per_hour', points)
+    
+    # Save auto-approve setting
+    if 'auto_approve_under_hours' in data:
+        SystemSettings.set_setting('auto_approve_under_hours', str(data['auto_approve_under_hours']).lower())
+    
+    # Save project review requirement
+    if 'project_requires_review' in data:
+        SystemSettings.set_setting('project_requires_review', str(data['project_requires_review']).lower())
+    
+    return jsonify({
+        'message': 'Settings saved successfully',
+        'settings': {
+            'points_per_hour': SystemSettings.get_setting('points_per_hour', '20'),
+            'auto_approve_under_hours': SystemSettings.get_setting('auto_approve_under_hours', 'false'),
+            'project_requires_review': SystemSettings.get_setting('project_requires_review', 'true')
+        }
+    })
 
 # Development-only: list users to help debug login issues
 @bp.route('/dev/users')

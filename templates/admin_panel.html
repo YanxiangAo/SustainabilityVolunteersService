@@ -310,10 +310,10 @@
                 <div class="card-content">
                     <div class="flex items-center gap-4 mb-4">
                         <span class="text-sm">1 hour volunteer service = </span>
-                        <input type="number" value="20" style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <input type="number" id="points-per-hour-input" value="20" min="1" style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
                         <span class="text-sm">points</span>
                     </div>
-                    <button class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                    <button id="save-points-settings-btn" class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
                 </div>
             </div>
 
@@ -325,13 +325,13 @@
                 <div class="card-content">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-sm">Auto-approve hour records under 3 hours</span>
-                        <input type="checkbox" style="width: 1.25rem; height: 1.25rem;">
+                        <input type="checkbox" id="auto-approve-checkbox" style="width: 1.25rem; height: 1.25rem;">
                     </div>
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-sm">Project publication requires admin review</span>
-                        <input type="checkbox" checked style="width: 1.25rem; height: 1.25rem;">
+                        <input type="checkbox" id="project-review-checkbox" checked style="width: 1.25rem; height: 1.25rem;">
                     </div>
-                    <button class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                    <button id="save-review-settings-btn" class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
                 </div>
             </div>
         </div>

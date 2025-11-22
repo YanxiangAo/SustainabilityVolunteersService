@@ -10,12 +10,8 @@
     <!-- Header -->
     <header class="header">
         <div class="container header-content">
-            <a href="/" class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20M2 12h20M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
-                    <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                </svg>
-                <h1 style="font-size: 1.25rem; margin: 0;">Sustainable Volunteer Platform</h1>
+            <a href="/" class="logo" style="margin-left: -0.5rem;">
+                <h1 style="font-size: 1.25rem; margin: 0;">Sustainable Volunteer Service Platform</h1>
             </a>
             <div class="flex gap-3 items-center">
                 {% if current_user.is_authenticated %}
@@ -112,7 +108,7 @@
             </div>
 
             <div class="text-center mt-6">
-                <button class="btn btn-outline btn-lg">View More Projects</button>
+                <a href="{{ url_for('main.login') }}" class="btn btn-outline btn-lg">View More Projects</a>
             </div>
         </div>
     </section>

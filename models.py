@@ -92,3 +92,38 @@ class UserBadge(db.Model):
     __table_args__ = (
         UniqueConstraint('user_id', 'badge_id', name='uq_user_badge'),
     )
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    project = relationship('Project', backref='comments', lazy=True)
+    user = relationship('User', backref='comments', lazy=True)
+
+class SystemSettings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @staticmethod
+    def get_setting(key, default=None):
+        """Get a setting value by key"""
+        setting = SystemSettings.query.filter_by(key=key).first()
+        return setting.value if setting else default
+    
+    @staticmethod
+    def set_setting(key, value):
+        """Set a setting value by key"""
+        setting = SystemSettings.query.filter_by(key=key).first()
+        if setting:
+            setting.value = str(value)
+            setting.updated_at = datetime.utcnow()
+        else:
+            setting = SystemSettings(key=key, value=str(value))
+            db.session.add(setting)
+        db.session.commit()
+        return setting

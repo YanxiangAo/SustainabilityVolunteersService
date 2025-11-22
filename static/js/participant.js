@@ -198,7 +198,137 @@ async function loadAvailableProjects() {
     }
 }
 
+// Display name editing functionality
+let originalDisplayName = '';
+
+function initDisplayNameEditor() {
+    const editBtn = document.getElementById('edit-display-name-btn');
+    const saveBtn = document.getElementById('save-display-name-btn');
+    const cancelBtn = document.getElementById('cancel-display-name-btn');
+    const input = document.getElementById('display-name-input');
+    const messageEl = document.getElementById('display-name-message');
+
+    if (!editBtn || !saveBtn || !cancelBtn || !input) return;
+
+    // Get current user ID from the page (we'll need to fetch it)
+    let currentUserId = null;
+
+    // Fetch current user info to get user ID
+    fetch('/api/v1/users/me')
+        .then(res => res.json())
+        .then(user => {
+            currentUserId = user.id;
+            originalDisplayName = user.display_name || '';
+            if (input && !input.value && originalDisplayName) {
+                input.value = originalDisplayName;
+            }
+        })
+        .catch(err => console.error('Failed to fetch user info:', err));
+
+    editBtn.addEventListener('click', function() {
+        originalDisplayName = input.value;
+        input.disabled = false;
+        input.style.backgroundColor = 'white';
+        input.focus();
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-flex';
+        cancelBtn.style.display = 'inline-flex';
+        messageEl.style.display = 'none';
+    });
+
+    cancelBtn.addEventListener('click', function() {
+        input.value = originalDisplayName;
+        input.disabled = true;
+        input.style.backgroundColor = 'var(--gray-100)';
+        editBtn.style.display = 'inline-flex';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        messageEl.style.display = 'none';
+    });
+
+    saveBtn.addEventListener('click', async function() {
+        const newDisplayName = input.value.trim();
+        
+        if (!currentUserId) {
+            showMessage('Error: User ID not found. Please refresh the page.', 'error');
+            return;
+        }
+
+        // Disable buttons during save
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const response = await fetch(`/api/v1/users/${currentUserId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    display_name: newDisplayName || null
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                originalDisplayName = newDisplayName;
+                input.disabled = true;
+                input.style.backgroundColor = 'var(--gray-100)';
+                input.style.borderColor = 'var(--gray-300)';
+                editBtn.style.display = 'inline-flex';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                
+                showMessage('Display name updated successfully!', 'success');
+                
+                // Update sidebar display
+                const sidebarUsername = document.getElementById('sidebar-username');
+                if (sidebarUsername) {
+                    sidebarUsername.textContent = newDisplayName || document.querySelector('#display-name-input').placeholder;
+                }
+            } else {
+                const error = await response.json();
+                showMessage(error.error || 'Failed to update display name', 'error');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        } catch (error) {
+            console.error('Error updating display name:', error);
+            showMessage('Failed to update display name. Please try again.', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    });
+
+    function showMessage(text, type) {
+        const messageEl = document.getElementById('display-name-message');
+        if (!messageEl) return;
+        
+        messageEl.textContent = text;
+        messageEl.style.display = 'block';
+        messageEl.style.color = type === 'success' ? 'var(--primary-green)' : 'var(--accent-orange)';
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+    }
+
+    // Allow Enter key to save
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !input.disabled) {
+            saveBtn.click();
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize display name editor
+    initDisplayNameEditor();
+
     fetchDashboardData().then(data => {
         if (data.error) {
             const dashboardContainers = [

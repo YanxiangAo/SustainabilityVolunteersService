@@ -32,13 +32,13 @@
     <!-- Header -->
     <header class="header">
         <div class="container header-content">
-            <a href="/" class="btn btn-ghost">
+            <button onclick="window.history.back()" class="btn btn-ghost" style="cursor: pointer; border: none; background: none; padding: 0.625rem 1rem; display: inline-flex; align-items: center; color: var(--gray-700); text-decoration: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                     <line x1="19" y1="12" x2="5" y2="12"/>
                     <polyline points="12 19 5 12 12 5"/>
                 </svg>
                 Back
-            </a>
+            </button>
         </div>
     </header>
 
@@ -159,9 +159,18 @@
                                 </svg>
                                 Send Comment (Admin Not Allowed)
                             </button>
+                            {% elif not can_comment %}
+                            <textarea id="comment-text" placeholder="You need to register for this project to comment" rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);" disabled></textarea>
+                            <button class="btn" style="background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <line x1="22" y1="2" x2="11" y2="13"/>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                                Register to Comment
+                            </button>
                             {% else %}
-                            <textarea id="comment-text" placeholder="Feel free to leave any questions here..." rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
-                            <button class="btn btn-primary" onclick="submitComment({{ project.id }})">
+                            <textarea id="comment-text" placeholder="Feel free to leave any questions or comments here..." rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
+                            <button class="btn btn-primary" id="submit-comment-btn" onclick="submitComment({{ project.id }})">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
                                     <line x1="22" y1="2" x2="11" y2="13"/>
                                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -172,27 +181,16 @@
                         </div>
 
                         <!-- Comments List -->
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div id="comments-container" style="display: flex; flex-direction: column; gap: 1rem;">
                             {% if comments %}
                                 {% for comment in comments %}
-                                <div style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
+                                <div class="comment-item" style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
                                     <div class="flex items-center gap-2 mb-2">
-                                        <span>{{ comment.user_name }}</span>
+                                        <span style="font-weight: 500;">{{ comment.user_name }}</span>
                                         <span class="badge badge-secondary text-xs">{{ comment.user_type }}</span>
                                         <span class="text-xs text-gray-500">{{ comment.created_at }}</span>
                                     </div>
-                                    <p class="text-gray-700 mb-2">{{ comment.comment }}</p>
-                                    {% if comment.reply %}
-                                    <div style="background-color: #eff6ff; padding: 0.75rem; border-radius: var(--border-radius); margin-top: 0.5rem;">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--secondary-blue);">
-                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                            </svg>
-                                            <span class="text-sm" style="color: var(--secondary-blue);">Organization Reply:</span>
-                                        </div>
-                                        <p class="text-sm text-gray-700">{{ comment.reply }}</p>
-                                    </div>
-                                    {% endif %}
+                                    <p class="text-gray-700 mb-2" style="white-space: pre-wrap;">{{ comment.comment }}</p>
                                 </div>
                                 {% endfor %}
                             {% else %}
@@ -352,13 +350,19 @@
         
         async function submitComment(projectId) {
             const textarea = document.getElementById('comment-text');
-            if (!textarea) return;
+            const submitBtn = document.getElementById('submit-comment-btn');
+            if (!textarea || !submitBtn) return;
             
             const comment = textarea.value.trim();
             if (!comment) {
                 alert('Please enter a comment.');
                 return;
             }
+            
+            // Disable button during submission
+            submitBtn.disabled = true;
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Sending...';
             
             try {
                 const response = await fetch(`/api/v1/projects/${projectId}/comments`, {
@@ -379,14 +383,92 @@
                 }
                 
                 if (response.ok || response.status === 201) {
-                    alert('Comment submitted! (Note: Full comment system requires Comment model implementation)');
+                    // Clear textarea
                     textarea.value = '';
+                    
+                    // Add new comment to the list
+                    addCommentToDOM(result);
+                    
+                    // Show success message briefly
+                    const successMsg = document.createElement('div');
+                    successMsg.textContent = 'Comment posted successfully!';
+                    successMsg.style.cssText = 'background-color: #dcfce7; color: var(--primary-green); padding: 0.5rem 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; font-size: 0.875rem;';
+                    const container = document.getElementById('comments-container');
+                    if (container) {
+                        container.insertBefore(successMsg, container.firstChild);
+                        setTimeout(() => successMsg.remove(), 3000);
+                    }
                 } else {
                     alert('Error: ' + (result.error || 'Failed to submit comment'));
                 }
             } catch (error) {
                 console.error(error);
                 alert('Error submitting comment. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+        
+        function addCommentToDOM(comment) {
+            const container = document.getElementById('comments-container');
+            if (!container) return;
+            
+            // Remove "no comments" message if exists
+            const noCommentsMsg = container.querySelector('p.text-gray-500');
+            if (noCommentsMsg) {
+                noCommentsMsg.remove();
+            }
+            
+            // Create comment element
+            const commentDiv = document.createElement('div');
+            commentDiv.className = 'comment-item';
+            commentDiv.style.cssText = 'border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;';
+            
+            commentDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span style="font-weight: 500;">${comment.user_name || 'Unknown'}</span>
+                    <span class="badge badge-secondary text-xs">${comment.user_type || 'User'}</span>
+                    <span class="text-xs text-gray-500">${comment.created_at || 'Just now'}</span>
+                </div>
+                <p class="text-gray-700 mb-2" style="white-space: pre-wrap;">${comment.comment || ''}</p>
+            `;
+            
+            // Insert at the top
+            container.insertBefore(commentDiv, container.firstChild);
+        }
+        
+        // Load comments on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const projectId = {{ project.id }};
+            loadComments(projectId);
+        });
+        
+        async function loadComments(projectId) {
+            try {
+                const response = await fetch(`/api/v1/projects/${projectId}/comments`);
+                if (!response.ok) {
+                    throw new Error('Failed to load comments');
+                }
+                const comments = await response.json();
+                
+                const container = document.getElementById('comments-container');
+                if (!container) return;
+                
+                // Clear existing comments (keep the structure)
+                container.innerHTML = '';
+                
+                if (comments.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No comments yet. Be the first to ask a question!</p>';
+                    return;
+                }
+                
+                // Render comments
+                comments.forEach(comment => {
+                    addCommentToDOM(comment);
+                });
+            } catch (error) {
+                console.error('Error loading comments:', error);
             }
         }
     </script>
