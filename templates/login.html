@@ -39,7 +39,7 @@
 
                     <!-- Login Form -->
                     <div class="tab-content active" id="login-tab">
-                        <form id="login-form" method="POST" action="{{ url_for('main.login') }}">
+                        <form id="login-form" method="POST" action="{{ url_for('auth.login') }}">
                             <div class="form-group">
                                 <label for="login-type">User Type</label>
                                 <select id="login-type" name="user_type" required>
@@ -81,7 +81,7 @@
 
                     <!-- Register Form -->
                     <div class="tab-content" id="register-tab">
-                        <form id="register-form" method="POST" action="{{ url_for('main.register') }}">
+                        <form id="register-form" method="POST" action="{{ url_for('auth.register') }}">
                             <div class="form-group">
                                 <label for="register-type">User Type</label>
                                 <select id="register-type" name="user_type" required>

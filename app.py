@@ -5,13 +5,15 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
 from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment
-from routes import bp
 from sqlalchemy import text, inspect
 from datetime import date, datetime
 
+# Import blueprints
+from api import register_blueprints
+
 # Initialize Flask-Login
 login_manager = LoginManager()
-login_manager.login_view = 'main.login'
+login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Please log in to access this page.'
 login_manager.login_message_category = 'info'
 
@@ -35,7 +37,7 @@ def create_app() -> Flask:
     migrate.init_app(app, db)
 
     # Register blueprints
-    app.register_blueprint(bp)
+    register_blueprints(app)
 
     # Ensure logs show up even when debug is off
     try:

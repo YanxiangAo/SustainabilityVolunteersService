@@ -20,16 +20,16 @@
                         <div class="font-semibold">{{ current_user.display_name or current_user.username }}</div>
                     </div>
                     {% if current_user.user_type == 'participant' %}
-                        <a href="{{ url_for('main.participant_dashboard') }}" class="btn btn-primary">Participant Dashboard</a>
+                        <a href="{{ url_for('views.participant_dashboard') }}" class="btn btn-primary">Participant Dashboard</a>
                     {% elif current_user.user_type == 'organization' %}
-                        <a href="{{ url_for('main.organization_dashboard') }}" class="btn btn-primary">Organization Dashboard</a>
+                        <a href="{{ url_for('views.organization_dashboard') }}" class="btn btn-primary">Organization Dashboard</a>
                     {% elif current_user.user_type == 'admin' %}
-                        <a href="{{ url_for('main.admin_panel') }}" class="btn btn-primary">Admin Panel</a>
+                        <a href="{{ url_for('views.admin_panel') }}" class="btn btn-primary">Admin Panel</a>
                     {% endif %}
-                    <a href="{{ url_for('main.logout') }}" class="btn btn-outline">Logout</a>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('main.login') }}" class="btn btn-outline">Login</a>
-                    <a href="{{ url_for('main.register') }}" class="btn btn-primary">Sign Up</a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
                 {% endif %}
             </div>
         </div>
@@ -108,7 +108,7 @@
             </div>
 
             <div class="text-center mt-6">
-                <a href="{{ url_for('main.login') }}" class="btn btn-outline btn-lg">View More Projects</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">View More Projects</a>
             </div>
         </div>
     </section>
@@ -158,9 +158,6 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20M2 12h20"/>
-                </svg>
                 <span>Sustainable Volunteer Service Platform</span>
             </div>
             <p>&copy; 2025 Sustainable Volunteer Service Platform | Taking action for sustainable development</p>
