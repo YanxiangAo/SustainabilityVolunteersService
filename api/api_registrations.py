@@ -100,9 +100,11 @@ def api_project_registrations_list(project_id):
 @login_required
 def api_project_registrations_create(project_id):
     """Register for a project."""
-    # Admin users are not allowed to register for projects
+    # Admin and organization users are not allowed to register for projects
     if current_user.user_type == 'admin':
         return jsonify({'error': 'Admin users cannot register for projects', 'requires_login': True}), 403
+    if current_user.user_type == 'organization':
+        return jsonify({'error': 'Organization users cannot register for projects', 'requires_login': True}), 403
     
     project = Project.query.get_or_404(project_id)
     

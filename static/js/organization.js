@@ -784,7 +784,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryOtherInput = document.getElementById('project-category-other');
     
     if (categorySelect && categoryOtherInput) {
+        // Initialize color based on current value
+        if (categorySelect.value && categorySelect.value !== '') {
+            categorySelect.style.color = 'var(--gray-700)';
+        }
+        
         categorySelect.addEventListener('change', function() {
+            // Change color to normal when a category is selected, keep light color for hint
+            if (this.value && this.value !== '') {
+                this.style.color = 'var(--gray-700)';
+            } else {
+                this.style.color = 'var(--gray-400)';
+            }
+            
             if (this.value === 'other') {
                 categoryOtherInput.style.display = 'block';
                 categoryOtherInput.required = true;

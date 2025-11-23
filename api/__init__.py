@@ -24,3 +24,4 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(api_admin_bp)
     app.register_blueprint(api_dashboard_bp)
 
+

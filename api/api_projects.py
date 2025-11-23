@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 
-from models import db, Project
+from models import db, Project, Registration
 
 bp = Blueprint('api_projects', __name__)
 
@@ -21,6 +21,19 @@ def api_projects_list():
         query = query.filter_by(status=status)
     if available:
         query = query.filter(Project.date >= today)
+    
+    # Exclude projects that the current user has already registered for
+    # Only apply this filter if user is authenticated and is a participant
+    if current_user.is_authenticated and current_user.user_type == 'participant':
+        # Get project IDs that the user has registered for (excluding cancelled)
+        registered_project_ids = db.session.query(Registration.project_id).filter_by(
+            user_id=current_user.id
+        ).filter(
+            Registration.status != 'cancelled'
+        ).distinct().all()
+        registered_project_ids = [pid[0] for pid in registered_project_ids]
+        if registered_project_ids:
+            query = query.filter(~Project.id.in_(registered_project_ids))
     
     projects = query.order_by(Project.date.asc()).all()
     

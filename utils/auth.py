@@ -96,3 +96,4 @@ def logout():
     response.delete_cookie(remember_cookie_name)
     return response
 
+

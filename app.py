@@ -5,7 +5,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
 from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment
-from sqlalchemy import text, inspect
+from sqlalchemy import text
 from datetime import date, datetime
 
 # Import blueprints
@@ -93,6 +93,7 @@ def seed_sample_data() -> None:
     Registration.query.delete()
     VolunteerRecord.query.delete()
     UserBadge.query.delete()
+    Comment.query.delete()
     db.session.commit()
     print("Existing data cleared.")
     
