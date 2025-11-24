@@ -88,7 +88,7 @@ def init_db(app: Flask) -> None:
 
 def seed_sample_data() -> None:
     """Populate the database with initial sample data for demo usage."""
-    # 删除现有的注册、工时记录和用户徽章数据（保留用户、项目和徽章定义）
+    # Remove existing registrations, volunteer records, and user badges while keeping users, projects, and badge definitions.
     print("Clearing existing registration and volunteer record data...")
     Registration.query.delete()
     VolunteerRecord.query.delete()
@@ -97,7 +97,7 @@ def seed_sample_data() -> None:
     db.session.commit()
     print("Existing data cleared.")
     
-    # 获取或创建必要的用户和项目（简化：直接查询，如果不存在则创建）
+    # Helper utilities to fetch or create prerequisite users/projects (simple query-or-create approach).
     def _get_or_create_user(username: str, email: str, user_type: str, password: str, display_name: str = None) -> User:
         user = User.query.filter_by(username=username).first()
         if not user:
@@ -124,22 +124,22 @@ def seed_sample_data() -> None:
             db.session.add(project)
             db.session.commit()
         else:
-            # 确保已存在的项目状态是 approved（用于这些特定的项目）
+            # Ensure any pre-existing seed project is set to approved when required.
             if 'status' in kwargs and kwargs['status'] == 'approved':
                 project.status = 'approved'
                 db.session.add(project)
                 db.session.commit()
         return project
     
-    # 创建一个组织
+    # Create a seed organization account.
     greenearth = _get_or_create_user("greenearth", "contact@greenearth.org", "organization", "OrgPass123!", "Green Earth Environmental")
     
-    # 创建一个参与者（用于验证流程的各个阶段）
+    # Create a participant used across all workflow scenarios.
     emma = _get_or_create_user("emma", "emma@example.com", "participant", "Volunteer123!", "Emma Wilson")
     
-    # 创建多个项目（用于验证 Project 状态流转：pending, approved, rejected, completed）
+    # Create multiple projects that exercise every project lifecycle state (pending, approved, rejected, completed).
     projects = {
-        # Project 状态：pending - 等待管理员审核
+        # Project state: pending — awaiting admin review.
         "pending_project": _get_or_create_project(
             "Community Garden Initiative", greenearth,
             date=date(2025, 12, 1), location="Community Center",
@@ -147,7 +147,7 @@ def seed_sample_data() -> None:
             max_participants=15, duration=6.0, points=100, rating=0.0,
             requirements="Interest in gardening and sustainable practices."
         ),
-        # Project 状态：approved - 已批准，可以接受注册（用于 registered 状态的注册）
+        # Project state: approved — open for registrations (used for the "registered" sample).
         "registered_project": _get_or_create_project(
             "Beach Cleanup Action", greenearth,
             date=date(2025, 12, 5), location="Golden Coast",
@@ -155,7 +155,7 @@ def seed_sample_data() -> None:
             max_participants=25, duration=4.5, points=70, rating=4.6,
             requirements="Able to walk on sandy terrain and handle cleanup tools."
         ),
-        # Project 状态：approved - 已批准（用于 approved 状态的注册）
+        # Project state: approved — used for the "approved" registration sample.
         "approved_registration_project": _get_or_create_project(
             "River Conservation Program", greenearth,
             date=date(2025, 12, 8), location="Riverside Park",
@@ -163,7 +163,7 @@ def seed_sample_data() -> None:
             max_participants=20, duration=5.0, points=75, rating=4.7,
             requirements="Comfortable working near water and able to use testing equipment."
         ),
-        # Project 状态：approved - 已批准（用于 cancelled 状态的注册）
+        # Project state: approved — used for the "cancelled" registration sample.
         "cancelled_registration_project": _get_or_create_project(
             "Wildlife Habitat Restoration", greenearth,
             date=date(2025, 12, 12), location="Nature Reserve",
@@ -171,7 +171,7 @@ def seed_sample_data() -> None:
             max_participants=18, duration=4.0, points=65, rating=4.5,
             requirements="Physical fitness and respect for wildlife."
         ),
-        # Project 状态：rejected - 被管理员拒绝
+        # Project state: rejected — demonstrates a project removed by admin.
         "rejected_project": _get_or_create_project(
             "Night Market Setup", greenearth,
             date=date(2025, 12, 10), location="Downtown Square",
@@ -179,7 +179,7 @@ def seed_sample_data() -> None:
             max_participants=20, duration=5.0, points=80, rating=0.0,
             requirements="Available in evenings and able to lift moderate weights."
         ),
-        # Project 状态：completed - 已完成（用于 completed 状态的注册）
+        # Project state: completed — used for the "completed" registration sample.
         "completed_project": _get_or_create_project(
             "Urban Greening Planting Project", greenearth,
             date=date(2025, 11, 20), location="City Park",
@@ -187,7 +187,7 @@ def seed_sample_data() -> None:
             max_participants=30, duration=5.0, points=90, rating=4.9,
             requirements="Comfortable with outdoor manual work for several hours."
         ),
-        # 用于创建已审核通过的 VolunteerRecord（展示完整流程）
+        # Dedicated project for pre-approved volunteer record seeding.
         "approved_record_project": _get_or_create_project(
             "Community Book Donation", greenearth,
             date=date(2025, 11, 25), location="Civic Center",
@@ -197,8 +197,8 @@ def seed_sample_data() -> None:
         ),
     }
     
-    # 设置项目的状态（除了 approved 是默认值）
-    # 确保 registered_project 和 approved_registration_project 的状态是 approved
+    # Explicitly set project statuses (approved is the default unless overridden here).
+    # Ensure the projects tied to registration samples remain approved.
     registered_project = projects["registered_project"]
     registered_project.status = 'approved'
     db.session.add(registered_project)
@@ -229,26 +229,26 @@ def seed_sample_data() -> None:
     
     db.session.commit()
 
-    # Seed registrations - 一个参与者注册多个项目，处于不同的状态，用于验证 Registration 状态流转
-    # Registration 状态：registered, approved, cancelled, completed
-    # 注意：只能注册到 approved 状态的项目，每个状态使用不同的项目
+    # Seed registrations: one participant registers for multiple projects to cover every Registration state.
+    # Registration states covered: registered, approved, cancelled, completed.
+    # Note: Only approved projects accept registrations, so each sample references an approved project.
     registrations = [
-        # 1. registered - 待组织审核的注册（参与者已注册，等待组织批准/拒绝）
+        # 1. registered — pending organization approval (participant is waiting for decision).
         (emma, projects["registered_project"], "registered"),
         
-        # 2. approved - 已批准（组织已批准，参与者可以参与，等待组织确认完成）
+        # 2. approved — organization accepted the participant and awaits completion confirmation.
         (emma, projects["approved_registration_project"], "approved"),
         
-        # 3. cancelled - 已取消（被组织拒绝或标记为未完成）
+        # 3. cancelled — rejected by organization or manually marked as cancelled.
         (emma, projects["cancelled_registration_project"], "cancelled"),
         
-        # 4. completed - 已完成（组织确认参与者完成，会自动创建 pending 的 VolunteerRecord）
+        # 4. completed — organization confirmed completion, which normally triggers a pending VolunteerRecord.
         (emma, projects["completed_project"], "completed"),
     ]
     
-    # 创建所有状态的注册
+    # Create registrations for each target state if they do not already exist.
     for user, proj, status in registrations:
-        # 检查是否已存在相同的注册
+        # Skip creation when the same registration already exists.
         existing = Registration.query.filter_by(
             user_id=user.id,
             project_id=proj.id,
@@ -265,8 +265,7 @@ def seed_sample_data() -> None:
     
     db.session.commit()
 
-    # 对于 completed 状态的注册，手动创建对应的 pending VolunteerRecord
-    # （因为自动创建只在状态变更时触发，seeding 时直接创建 completed 状态不会触发）
+    # Manually create pending volunteer records for completed registrations, because automatic creation only happens during state transitions.
     completed_registrations = Registration.query.filter_by(status='completed').all()
     pending_records_created = 0
     for reg in completed_registrations:
@@ -281,23 +280,23 @@ def seed_sample_data() -> None:
                 project_id=reg.project_id,
                 hours=project.duration,
                 points=project.points,
-                status='pending',  # 待管理员审核
+                status='pending',  # Waiting for admin approval
                 completed_at=datetime.utcnow()
             )
             db.session.add(record)
             pending_records_created += 1
     db.session.commit()
     
-    # Seed 一些已审核通过的 VolunteerRecord（用于展示完整的流程）
-    # 这些代表之前已完成并审核通过的项目
+    # Seed a few already-approved volunteer records to demonstrate the end-to-end flow.
+    # These represent historical projects that finished and passed admin review.
     approved_records = [
-        # 已审核通过 - 会显示在参与者的统计和 Hour Records 中
+        # Approved record — shows up inside participant statistics and Hour Records.
         (emma, projects["approved_record_project"], 3.5, 55, "approved"),
     ]
     
     approved_count = 0
     for user, proj, hours, points, status in approved_records:
-        # 检查是否已存在
+        # Skip when a record already exists for the user/project pair.
         existing = VolunteerRecord.query.filter_by(
             user_id=user.id,
             project_id=proj.id
@@ -315,7 +314,7 @@ def seed_sample_data() -> None:
             approved_count += 1
     db.session.commit()
     
-    # 统计创建的注册数量
+    # Output a quick summary of how many registrations were generated.
     total_registrations = Registration.query.filter_by(user_id=emma.id).count()
     print(f"Created {total_registrations} registrations for participant emma:")
     print(f"  - registered: {Registration.query.filter_by(user_id=emma.id, status='registered').count()}")
@@ -325,7 +324,7 @@ def seed_sample_data() -> None:
     print(f"\nCreated {pending_records_created} pending volunteer records (from completed registrations).")
     print(f"Created {approved_count} approved volunteer records.")
     
-    # 打印项目状态统计
+    # Print the distribution of project statuses for visibility.
     print(f"\nProject status summary:")
     print(f"  - pending: {Project.query.filter_by(organization_id=greenearth.id, status='pending').count()}")
     print(f"  - approved: {Project.query.filter_by(organization_id=greenearth.id, status='approved').count()}")

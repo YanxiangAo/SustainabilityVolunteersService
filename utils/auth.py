@@ -68,6 +68,9 @@ def register():
         # Create new user
         try:
             user = User()
+            user.username = form.username
+            user.email = form.email
+            user.user_type = form.user_type
             user.set_password(form.password)
             db.session.add(user)
             db.session.commit()
@@ -95,5 +98,6 @@ def logout():
     remember_cookie_name = current_app.config.get('REMEMBER_COOKIE_NAME', 'remember_token')
     response.delete_cookie(remember_cookie_name)
     return response
+
 
 
