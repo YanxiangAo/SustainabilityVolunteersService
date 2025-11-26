@@ -4,31 +4,57 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 
 from models import db, User
-from forms import parse_login_form, parse_register_form
+from forms import LoginForm, RegisterForm
 
 bp = Blueprint('auth', __name__)
+
+
+def _format_form_errors(form) -> str:
+    if not form.errors:
+        return 'Invalid input. Please check your entries.'
+    parts = []
+    for field, messages in form.errors.items():
+        label = getattr(form, field).label.text if hasattr(form, field) else field
+        parts.append(f"{label}: {', '.join(messages)}")
+    return '; '.join(parts)
+
+
+def _render_login_template(**context):
+    defaults = {'error': None, 'form_errors': None}
+    defaults.update(context)
+    return render_template('login.html', **defaults)
 
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        form = parse_login_form(request)
+        form = LoginForm(request.form)
+        if not form.validate():
+            return _render_login_template(
+                error=_format_form_errors(form),
+                form_errors=form.errors,
+            )
+
+        identifier = form.username.data or ''
+        user_type = (form.user_type.data or '').lower()
         user = User.query.filter(
-            User.user_type == form.user_type,
-            or_(User.username == form.username_or_email, User.email == form.username_or_email)
+            User.user_type == user_type,
+            or_(User.username == identifier, User.email == identifier)
         ).first()
 
-        if user and user.check_password(form.password):
+        if user and user.check_password(form.password.data or ''):
             # Check if user is active
             if hasattr(user, 'is_active') and not user.is_active:
-                return render_template('login.html', error='Your account has been disabled. Please contact an administrator.')
+                return _render_login_template(
+                    error='Your account has been disabled. Please contact an administrator.'
+                )
             
             # Use Flask-Login to log in the user
-            login_user(user, remember=form.remember)
+            login_user(user, remember=bool(form.remember.data))
 
             # Ensure we don't persist the session unless the user requested it
             session.permanent = False
-            if not form.remember:
+            if not form.remember.data:
                 session['_remember'] = 'clear'
                 session.pop('_remember_seconds', None)
             
@@ -43,35 +69,47 @@ def login():
             elif user.user_type == 'admin':
                 return redirect(url_for('views.admin_panel'))
         else:
-            return render_template('login.html', error='Invalid credentials')
+            return _render_login_template(error='Invalid credentials')
     
-    return render_template('login.html')
+    return _render_login_template()
 
 
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        form = parse_register_form(request)
-        current_app.logger.info(f"Register POST received: user_type={form.user_type}, username={form.username}, email={form.email}")
+        form = RegisterForm(request.form)
+        if not form.validate():
+            return _render_login_template(
+                error=_format_form_errors(form),
+                form_errors=form.errors,
+            )
+
+        current_app.logger.info(
+            "Register POST received: user_type=%s, username=%s, email=%s",
+            form.user_type.data,
+            form.username.data,
+            form.email.data,
+        )
 
         # Validate user_type
-        if form.user_type not in ('participant', 'organization'):
-            return render_template('login.html', error='Invalid user type')
+        user_type = (form.user_type.data or '').lower()
+        if user_type not in ('participant', 'organization'):
+            return _render_login_template(error='Invalid user type')
         
         # Check if user already exists
-        if User.query.filter_by(username=form.username).first():
-            return render_template('login.html', error='Username already exists')
+        if User.query.filter_by(username=form.username.data).first():
+            return _render_login_template(error='Username already exists')
         
-        if User.query.filter_by(email=form.email).first():
-            return render_template('login.html', error='Email already exists')
+        if User.query.filter_by(email=form.email.data).first():
+            return _render_login_template(error='Email already exists')
         
         # Create new user
         try:
             user = User()
-            user.username = form.username
-            user.email = form.email
-            user.user_type = form.user_type
-            user.set_password(form.password)
+            user.username = form.username.data
+            user.email = form.email.data
+            user.user_type = user_type
+            user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
             current_app.logger.info(f"Register success: id={user.id}, username={user.username}, type={user.user_type}")
@@ -82,7 +120,7 @@ def register():
         
         return redirect(url_for('auth.login'))
     
-    return render_template('login.html')
+    return _render_login_template()
 
 
 @bp.route('/logout')

@@ -28,6 +28,17 @@
                         {{ error }}
                     </div>
                     {% endif %}
+                    {% if form_errors %}
+                    <div class="alert" style="background:#fef3c7;color:#92400e;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
+                        <ul style="margin:0;padding-left:1.25rem;">
+                            {% for field, messages in form_errors.items() %}
+                                {% for message in messages %}
+                                <li><strong>{{ field|replace('_', ' ')|title }}:</strong> {{ message }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                     <!-- Tabs -->
                     <div class="tabs">
                         <button class="tab active" data-tab="login">Login</button>
