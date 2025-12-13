@@ -7,20 +7,19 @@
  */
 
 /* ============================================================
- * Section Backgrounds (for dark mode compatibility)
+ * Section Backgrounds
  * ============================================================ */
 
 .section-white {
-    background-color: var(--white);
+    background-color: var(--bg-secondary);
 }
 
 .section-gray {
-    background-color: var(--gray-50);
+    background-color: var(--bg-primary);
 }
 
 /* ============================================================
  * Utility Classes for Inline Style Replacement
- * These replace common inline styles for dark mode support
  * ============================================================ */
 
 /* Icon/Avatar Containers */
@@ -52,9 +51,19 @@
     color: var(--primary-green);
 }
 
+[data-theme="dark"] .icon-container-green {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: var(--primary-green-light);
+}
+
 .icon-container-blue {
     background-color: #dbeafe;
     color: var(--secondary-blue);
+}
+
+[data-theme="dark"] .icon-container-blue {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
 }
 
 .icon-container-purple {
@@ -62,9 +71,19 @@
     color: var(--accent-purple);
 }
 
+[data-theme="dark"] .icon-container-purple {
+    background-color: rgba(147, 51, 234, 0.2);
+    color: #a855f7;
+}
+
 .icon-container-pink {
     background-color: #fce7f3;
     color: #ec4899;
+}
+
+[data-theme="dark"] .icon-container-pink {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #f472b6;
 }
 
 .icon-container-orange {
@@ -72,7 +91,12 @@
     color: var(--accent-orange);
 }
 
-/* Text Color Utilities (with dark mode support) */
+[data-theme="dark"] .icon-container-orange {
+    background-color: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+}
+
+/* Text Color Utilities */
 .text-accent-green {
     color: var(--primary-green);
 }
@@ -95,15 +119,15 @@
 
 /* Background Utilities */
 .bg-muted {
-    background-color: var(--gray-50);
+    background-color: var(--bg-primary);
 }
 
 .bg-subtle {
-    background-color: var(--gray-100);
+    background-color: var(--bg-tertiary);
 }
 
 .bg-card {
-    background-color: var(--white);
+    background-color: var(--bg-card);
 }
 
 /* Status Indicator Dots */
@@ -175,23 +199,23 @@
 /* Form Display Fields (readonly-like) */
 .form-display {
     padding: 0.5rem 0.75rem;
-    background-color: var(--gray-50);
+    background-color: var(--bg-tertiary);
     border-radius: var(--border-radius);
     font-size: 0.875rem;
 }
 
 .form-display-label {
-    color: var(--gray-500);
+    color: var(--text-tertiary);
 }
 
 .form-display-value {
-    color: var(--gray-700);
+    color: var(--text-primary);
     font-weight: 500;
 }
 
 /* Log/Code Display Area */
 .log-display {
-    background-color: var(--gray-50);
+    background-color: var(--bg-tertiary);
     padding: 1rem;
     border-radius: var(--border-radius);
     font-family: monospace;
@@ -200,11 +224,12 @@
     white-space: pre-wrap;
     max-height: 500px;
     overflow: auto;
+    color: var(--text-primary);
 }
 
 /* Settings Form Block */
 .settings-block {
-    background-color: var(--gray-50);
+    background-color: var(--bg-tertiary);
     padding: 1rem;
     border-radius: var(--border-radius);
     margin-bottom: 1rem;
@@ -214,7 +239,7 @@
 .progress-bar {
     width: 100%;
     height: 0.5rem;
-    background-color: var(--gray-200);
+    background-color: var(--bg-tertiary);
     border-radius: 9999px;
     overflow: hidden;
 }
@@ -262,12 +287,13 @@
     padding: 0.625rem 1rem;
     display: inline-flex;
     align-items: center;
-    color: var(--gray-700);
+    color: var(--text-primary);
     text-decoration: none;
+    transition: var(--transition-colors);
 }
 
 .btn-back:hover {
-    color: var(--gray-900);
+    color: var(--primary-green);
 }
 
 /* ============================================================
@@ -281,6 +307,11 @@
     justify-content: center;
     background: linear-gradient(135deg, #e0f4e8 0%, #f0f9ff 50%, #e8f5e9 100%);
     padding: 2rem;
+    transition: var(--transition-colors);
+}
+
+[data-theme="dark"] .auth-container {
+    background: linear-gradient(135deg, #1e3a2e 0%, #1e293b 50%, #1e3a2e 100%);
 }
 
 .auth-card {
@@ -289,7 +320,7 @@
 }
 
 .auth-card .card {
-    border: 1px solid var(--gray-200);
+    border: 1px solid var(--border-color);
 }
 
 /* ============================================================
@@ -560,18 +591,18 @@
 .empty-state {
     text-align: center;
     padding: 3rem 1rem;
-    color: var(--gray-500);
+    color: var(--text-tertiary);
 }
 
 .empty-state svg {
     width: 64px;
     height: 64px;
-    color: var(--gray-300);
+    color: var(--text-muted);
     margin-bottom: 1rem;
 }
 
 .empty-state h3 {
-    color: var(--gray-700);
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
@@ -596,7 +627,7 @@
 }
 
 .loading-text {
-    color: var(--gray-500);
+    color: var(--text-tertiary);
     font-size: 0.875rem;
     margin-top: 0.5rem;
 }
@@ -611,7 +642,7 @@
     bottom: 0;
     width: 16rem;
     padding: 1rem;
-    border-top: 1px solid var(--gray-200);
+    border-top: 1px solid var(--border-color);
 }
 
 /* Form Label */
@@ -619,7 +650,7 @@
     display: block;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: var(--gray-700);
+    color: var(--text-primary);
     font-size: 0.875rem;
 }
 
@@ -627,11 +658,12 @@
 .form-input-readonly {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--gray-300);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 0.875rem;
-    background-color: var(--gray-100);
-    transition: all 0.2s;
+    background-color: var(--bg-tertiary);
+    transition: var(--transition-colors);
+    color: var(--text-primary);
 }
 
 .form-input-readonly:disabled {
@@ -644,9 +676,9 @@
     text-align: center;
     min-width: 100px;
     padding: 1rem;
-    background: var(--white);
+    background: var(--bg-card);
     border-radius: var(--border-radius);
-    border: 2px dashed var(--gray-300);
+    border: 2px dashed var(--border-color);
     opacity: 0.6;
     transition: all 0.3s;
 }
@@ -674,7 +706,7 @@
 
 .milestone-hours {
     font-size: 0.75rem;
-    color: var(--gray-500);
+    color: var(--text-tertiary);
 }
 
 /* Journey Card Gradient */
@@ -776,8 +808,8 @@
 .form-select {
     width: 10rem;
     padding: 0.5rem;
-    border: 1px solid var(--gray-300);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: var(--white);
-    color: inherit;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
 }
