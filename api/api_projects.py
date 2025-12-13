@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 
-from models import db, Project, Registration, SystemSettings
+from models import db, Project, Registration, SystemSettings, Comment, VolunteerRecord
 
 bp = Blueprint('api_projects', __name__)
 logger = logging.getLogger(__name__)
@@ -275,3 +275,47 @@ def api_projects_update(project_id):
         'status': project.status,
         'message': 'Project updated successfully'
     })
+
+
+@bp.route('/api/v1/projects/<int:project_id>', methods=['DELETE'])
+@login_required
+def api_projects_delete(project_id):
+    """Delete a project. Only organization owners can delete their own projects."""
+    project = Project.query.get_or_404(project_id)
+    
+    # Check permissions: only organization owners can delete their own projects
+    if current_user.user_type != 'organization' or project.organization_id != current_user.id:
+        return jsonify({'error': 'Unauthorized. You can only delete your own projects.'}), 403
+    
+    try:
+        pid = project.id
+        
+        # Delete all comments on this project (including replies)
+        # First, get all comment IDs from this project
+        project_comments = Comment.query.filter_by(project_id=pid).all()
+        project_comment_ids = [c.id for c in project_comments]
+        
+        # Delete all replies to comments on this project (must delete replies first due to foreign key)
+        if project_comment_ids:
+            Comment.query.filter(Comment.parent_id.in_(project_comment_ids)).delete(synchronize_session=False)
+        
+        # Delete all comments on this project
+        Comment.query.filter_by(project_id=pid).delete(synchronize_session=False)
+        
+        # Delete all registrations for this project
+        Registration.query.filter_by(project_id=pid).delete(synchronize_session=False)
+        
+        # Delete all volunteer records for this project
+        VolunteerRecord.query.filter_by(project_id=pid).delete(synchronize_session=False)
+        
+        # Delete the project itself
+        db.session.delete(project)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Project deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error deleting project {project_id}: {str(e)}', exc_info=True)
+        return jsonify({'error': f'Failed to delete project: {str(e)}'}), 500

@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sustainable Volunteer Service Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -14,42 +20,23 @@
                 <h1 style="font-size: 1.25rem; margin: 0;">Sustainable Volunteer Service Platform</h1>
             </a>
             <div class="flex gap-3 items-center">
-                <button class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
-                    <span class="theme-icon-sun" style="display: none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                    </span>
-                    <span class="theme-icon-moon" style="display: flex;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                    </span>
-                </button>
                 {% if current_user.is_authenticated %}
-                    <div class="text-right mr-2">
-                        <div class="text-sm text-gray-500">{{ current_user.user_type|title }}</div>
-                        <div class="font-semibold">{{ current_user.display_name or current_user.username }}</div>
-                    </div>
-                    {% if current_user.user_type == 'participant' %}
-                        <a href="{{ url_for('views.participant_dashboard') }}" class="btn btn-primary">Participant Dashboard</a>
-                    {% elif current_user.user_type == 'organization' %}
-                        <a href="{{ url_for('views.organization_dashboard') }}" class="btn btn-primary">Organization Dashboard</a>
-                    {% elif current_user.user_type == 'admin' %}
-                        <a href="{{ url_for('views.admin_panel') }}" class="btn btn-primary">Admin Panel</a>
-                    {% endif %}
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
+                <div class="text-right mr-2">
+                    <div class="text-sm text-gray-500">{{ current_user.user_type|title }}</div>
+                    <div class="font-semibold">{{ current_user.display_name or current_user.username }}</div>
+                </div>
+                {% if current_user.user_type == 'participant' %}
+                <a href="{{ url_for('views.participant_dashboard') }}" class="btn btn-primary">Participant Dashboard</a>
+                {% elif current_user.user_type == 'organization' %}
+                <a href="{{ url_for('views.organization_dashboard') }}" class="btn btn-primary">Organization
+                    Dashboard</a>
+                {% elif current_user.user_type == 'admin' %}
+                <a href="{{ url_for('views.admin_panel') }}" class="btn btn-primary">Admin Panel</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
                 {% endif %}
             </div>
         </div>
@@ -61,31 +48,35 @@
             <h2>Building a Better Future, Starting with Volunteering</h2>
             <p>Connecting volunteers with organizations to practice sustainable development</p>
             <div class="flex gap-4 justify-center">
-                <a href="/register" class="btn btn-lg" style="background-color: white; color: var(--primary-green);">Join Now</a>
-                <a href="#about" class="btn btn-lg btn-outline" style="border-color: white; color: white;">Learn More</a>
+                <a href="/register" class="btn btn-lg btn-hero-primary">Join Now</a>
+                <a href="#about" class="btn btn-lg btn-hero-outline">Learn More</a>
             </div>
         </div>
     </section>
 
     <!-- Platform Statistics -->
-    <section class="py-12" style="background-color: var(--bg-secondary);">
+    <section class="py-12 section-white">
         <div class="container">
             <div class="grid grid-cols-4">
                 <div class="card stats-card">
                     <div class="card-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-green);">
-                            <path d="M12 2v20M2 12h20"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="text-accent-green">
+                            <path d="M12 2v20M2 12h20" />
                         </svg>
-                        <div class="stats-number text-green-600">500+</div>
+                        <div class="stats-number text-accent-green">500+</div>
                         <div class="text-gray-600">Projects</div>
                     </div>
                 </div>
                 <div class="card stats-card">
                     <div class="card-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary-blue);">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="color: var(--secondary-blue);">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                         </svg>
                         <div class="stats-number text-blue-600">10,000+</div>
                         <div class="text-gray-600">Volunteers</div>
@@ -93,8 +84,11 @@
                 </div>
                 <div class="card stats-card">
                     <div class="card-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ec4899;">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="color: #ec4899;">
+                            <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                         <div class="stats-number" style="color: #ec4899;">50,000+</div>
                         <div class="text-gray-600">Volunteer Hours</div>
@@ -102,10 +96,12 @@
                 </div>
                 <div class="card stats-card">
                     <div class="card-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-purple);">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="color: var(--accent-purple);">
+                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="6" />
+                            <circle cx="12" cy="12" r="2" />
                         </svg>
                         <div class="stats-number" style="color: var(--accent-purple);">200+</div>
                         <div class="text-gray-600">Partner Organizations</div>
@@ -116,7 +112,7 @@
     </section>
 
     <!-- Featured Projects -->
-    <section class="py-16" style="background-color: var(--bg-primary);">
+    <section class="py-16 section-gray">
         <div class="container">
             <div class="text-center mb-8">
                 <h2>Featured Projects</h2>
@@ -134,7 +130,7 @@
     </section>
 
     <!-- Core Values -->
-    <section class="py-16" style="background-color: var(--bg-secondary);">
+    <section class="py-16 section-white">
         <div class="container">
             <div class="text-center mb-8">
                 <h2>Our Core Values</h2>
@@ -142,33 +138,41 @@
 
             <div class="grid grid-cols-3">
                 <div class="text-center">
-                    <div style="width: 4rem; height: 4rem; background-color: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-green);">
-                            <path d="M12 2v20M2 12h20"/>
+                    <div class="icon-container icon-container-lg icon-container-green mb-4"
+                        style="margin: 0 auto 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v20M2 12h20" />
                         </svg>
                     </div>
                     <h3>Sustainability</h3>
-                    <p class="text-gray-600">Promoting environmental awareness and contributing to a sustainable future</p>
+                    <p class="text-gray-600">Promoting environmental awareness and contributing to a sustainable future
+                    </p>
                 </div>
                 <div class="text-center">
-                    <div style="width: 4rem; height: 4rem; background-color: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--secondary-blue);">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    <div class="icon-container icon-container-lg icon-container-blue mb-4" style="margin: 0 auto 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                         </svg>
                     </div>
                     <h3>Community Impact</h3>
                     <p class="text-gray-600">Connecting volunteers with communities in need, spreading warmth</p>
                 </div>
                 <div class="text-center">
-                    <div style="width: 4rem; height: 4rem; background-color: #f3e8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-purple);">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                    <div class="icon-container icon-container-lg icon-container-purple mb-4"
+                        style="margin: 0 auto 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                         </svg>
                     </div>
                     <h3>Collaboration</h3>
-                    <p class="text-gray-600">Fostering partnerships to make volunteer work more efficient and impactful</p>
+                    <p class="text-gray-600">Fostering partnerships to make volunteer work more efficient and impactful
+                    </p>
                 </div>
             </div>
         </div>
@@ -187,4 +191,5 @@
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 </body>
+
 </html>

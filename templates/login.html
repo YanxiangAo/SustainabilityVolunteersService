@@ -1,32 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sustainable Volunteer Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
 </head>
+
 <body>
-    <button class="theme-toggle" aria-label="Toggle theme" title="Toggle theme" style="position: fixed; top: 1rem; right: 1rem; z-index: 1000;">
-        <span class="theme-icon-sun" style="display: none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-        </span>
-        <span class="theme-icon-moon" style="display: flex;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-        </span>
-    </button>
     <div class="auth-container">
         <div class="auth-card">
             <!-- Logo and Title -->
@@ -44,17 +30,19 @@
                 </div>
                 <div class="card-content">
                     {% if error %}
-                    <div class="alert" style="background:#fee2e2;color:#991b1b;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
+                    <div class="alert"
+                        style="background:#fee2e2;color:#991b1b;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
                         {{ error }}
                     </div>
                     {% endif %}
                     {% if form_errors %}
-                    <div class="alert" style="background:#fef3c7;color:#92400e;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
+                    <div class="alert"
+                        style="background:#fef3c7;color:#92400e;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:1rem;">
                         <ul style="margin:0;padding-left:1.25rem;">
                             {% for field, messages in form_errors.items() %}
-                                {% for message in messages %}
-                                <li><strong>{{ field|replace('_', ' ')|title }}:</strong> {{ message }}</li>
-                                {% endfor %}
+                            {% for message in messages %}
+                            <li><strong>{{ field|replace('_', ' ')|title }}:</strong> {{ message }}</li>
+                            {% endfor %}
                             {% endfor %}
                         </ul>
                     </div>
@@ -79,17 +67,21 @@
 
                             <div class="form-group">
                                 <label for="login-username">Username / Email</label>
-                                <input type="text" id="login-username" name="username" placeholder="Enter username or email" required>
+                                <input type="text" id="login-username" name="username"
+                                    placeholder="Enter username or email" required>
                             </div>
 
                             <div class="form-group">
                                 <label for="login-password">Password</label>
                                 <div class="password-input-wrapper">
-                                    <input type="password" id="login-password" name="password" placeholder="Enter password" required>
-                                    <button type="button" class="password-toggle" onclick="togglePassword('login-password')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                            <circle cx="12" cy="12" r="3"/>
+                                    <input type="password" id="login-password" name="password"
+                                        placeholder="Enter password" required>
+                                    <button type="button" class="password-toggle"
+                                        onclick="togglePassword('login-password')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
                                         </svg>
                                     </button>
                                 </div>
@@ -120,22 +112,27 @@
 
                             <div class="form-group">
                                 <label for="register-username">Username</label>
-                                <input type="text" id="register-username" name="username" placeholder="Enter username" required>
+                                <input type="text" id="register-username" name="username" placeholder="Enter username"
+                                    required>
                             </div>
 
                             <div class="form-group">
                                 <label for="register-email">Email</label>
-                                <input type="email" id="register-email" name="email" placeholder="Enter email address" required>
+                                <input type="email" id="register-email" name="email" placeholder="Enter email address"
+                                    required>
                             </div>
 
                             <div class="form-group">
                                 <label for="register-password">Password</label>
                                 <div class="password-input-wrapper">
-                                    <input type="password" id="register-password" name="password" placeholder="Enter password (at least 6 characters)" required minlength="6">
-                                    <button type="button" class="password-toggle" onclick="togglePassword('register-password')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                            <circle cx="12" cy="12" r="3"/>
+                                    <input type="password" id="register-password" name="password"
+                                        placeholder="Enter password (at least 6 characters)" required minlength="6">
+                                    <button type="button" class="password-toggle"
+                                        onclick="togglePassword('register-password')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
                                         </svg>
                                     </button>
                                 </div>
@@ -143,7 +140,8 @@
 
                             <div class="form-group">
                                 <label for="register-confirm-password">Confirm Password</label>
-                                <input type="password" id="register-confirm-password" name="confirm_password" placeholder="Re-enter password" required minlength="6">
+                                <input type="password" id="register-confirm-password" name="confirm_password"
+                                    placeholder="Re-enter password" required minlength="6">
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
@@ -163,6 +161,8 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
+
 </html>

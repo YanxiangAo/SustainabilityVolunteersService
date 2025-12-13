@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Details - Sustainable Volunteer Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
 </head>
+
 <body>
-{% macro render_stars(rating, size='20') %}
+    {% macro render_stars(rating, size='20') %}
     {% set rating_int = rating | int %}
     {% set rating_decimal = rating - rating_int %}
     {% set color_class = 'rating-high' if rating >= 4 else ('rating-medium' if rating >= 3 else 'rating-low') %}
@@ -15,49 +21,35 @@
     <div class="sustainability-rating {{ color_class }}">
         <div class="stars">
             {% for i in range(1, 6) %}
-                {% if i <= rating_int or (i == rating_int + 1 and rating_decimal >= 0.5) %}
-                    <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
+            {% if i <= rating_int or (i==rating_int + 1 and rating_decimal>= 0.5) %}
+                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}"
+                    viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
                 {% else %}
-                    <svg class="star" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                    </svg>
+                <svg class="star" xmlns="http://www.w3.org/2000/svg" width="{{ size }}" height="{{ size }}"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
                 {% endif %}
-            {% endfor %}
+                {% endfor %}
         </div>
         <span class="rating-badge" style="background-color: {{ bg_color }};">{{ "%.1f"|format(rating) }}</span>
     </div>
-{% endmacro %}
+    {% endmacro %}
     <!-- Header -->
     <header class="header">
         <div class="container header-content">
-            <button onclick="window.history.back()" class="btn btn-ghost" style="cursor: pointer; border: none; background: none; padding: 0.625rem 1rem; display: inline-flex; align-items: center; color: var(--gray-700); text-decoration: none;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                    <line x1="19" y1="12" x2="5" y2="12"/>
-                    <polyline points="12 19 5 12 12 5"/>
+            <button onclick="window.history.back()" class="btn btn-ghost"
+                style="cursor: pointer; border: none; background: none; padding: 0.625rem 1rem; display: inline-flex; align-items: center; color: var(--gray-700); text-decoration: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
                 </svg>
                 Back
-            </button>
-            <button class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">
-                <span class="theme-icon-sun" style="display: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </span>
-                <span class="theme-icon-moon" style="display: flex;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </span>
             </button>
         </div>
     </header>
@@ -74,15 +66,18 @@
                                 <div class="flex items-center gap-3 mb-2">
                                     <span class="badge badge-primary">{{ project.category }}</span>
                                     {% if registration_count %}
-                                    <span class="badge" style="background-color: #dbeafe; color: var(--secondary-blue);">Registered</span>
+                                    <span class="badge"
+                                        style="background-color: #dbeafe; color: var(--secondary-blue);">Registered</span>
                                     {% endif %}
                                 </div>
                                 <h1 class="mb-3">{{ project.title }}</h1>
                                 <div class="flex items-center gap-2 text-gray-600">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                                     </svg>
-                                    <span>{{ (organization.display_name or organization.username) if organization else 'Organization Name' }}</span>
+                                    <span>{{ (organization.display_name or organization.username) if organization else
+                                        'Organization Name' }}</span>
                                     <span class="badge badge-success">Verified</span>
                                 </div>
                             </div>
@@ -106,10 +101,12 @@
 
                         <div class="grid grid-cols-2 gap-4 mb-6">
                             <div class="flex items-start gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500); margin-top: 0.125rem;">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                    <line x1="16" y1="2" x2="16" y2="6"/>
-                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2"
+                                    style="color: var(--gray-500); margin-top: 0.125rem;">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Activity Date</div>
@@ -117,9 +114,11 @@
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500); margin-top: 0.125rem;">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <polyline points="12 6 12 12 16 14"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2"
+                                    style="color: var(--gray-500); margin-top: 0.125rem;">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Duration</div>
@@ -127,9 +126,11 @@
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500); margin-top: 0.125rem;">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                                    <circle cx="12" cy="10" r="3"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2"
+                                    style="color: var(--gray-500); margin-top: 0.125rem;">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                    <circle cx="12" cy="10" r="3" />
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Location</div>
@@ -137,9 +138,11 @@
                                 </div>
                             </div>
                             <div class="flex items-start gap-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500); margin-top: 0.125rem;">
-                                    <circle cx="12" cy="8" r="7"/>
-                                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2"
+                                    style="color: var(--gray-500); margin-top: 0.125rem;">
+                                    <circle cx="12" cy="8" r="7" />
+                                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
                                 </svg>
                                 <div>
                                     <div class="text-sm text-gray-600">Volunteer Points</div>
@@ -152,9 +155,9 @@
                             <h3 class="mb-2">Requirements</h3>
                             <p class="text-gray-700">
                                 {% if project.requirements %}
-                                    {{ project.requirements }}
+                                {{ project.requirements }}
                                 {% else %}
-                                    No specific requirements listed.
+                                No specific requirements listed.
                                 {% endif %}
                             </p>
                         </div>
@@ -171,29 +174,40 @@
                         <!-- Comment Input -->
                         <div class="mb-6">
                             {% if user_type == 'admin' %}
-                            <textarea id="comment-text" placeholder="Admin users cannot comment on projects" rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);" disabled></textarea>
+                            <textarea id="comment-text" placeholder="Admin users cannot comment on projects" rows="3"
+                                style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"
+                                disabled></textarea>
                             <button class="btn" style="background-color: #f3f4f6; color: var(--gray-500);" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                    <line x1="22" y1="2" x2="11" y2="13"/>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
                                 </svg>
                                 Send Comment (Admin Not Allowed)
                             </button>
                             {% elif not can_comment %}
-                            <textarea id="comment-text" placeholder="You need to register for this project to comment" rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);" disabled></textarea>
+                            <textarea id="comment-text" placeholder="You need to register for this project to comment"
+                                rows="3"
+                                style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"
+                                disabled></textarea>
                             <button class="btn" style="background-color: #f3f4f6; color: var(--gray-500);" disabled>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                    <line x1="22" y1="2" x2="11" y2="13"/>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
                                 </svg>
                                 Register to Comment
                             </button>
                             {% else %}
-                            <textarea id="comment-text" placeholder="Feel free to leave any questions or comments here..." rows="3" style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
-                            <button class="btn btn-primary" id="submit-comment-btn" onclick="submitComment({{ project.id }})">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                    <line x1="22" y1="2" x2="11" y2="13"/>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            <textarea id="comment-text"
+                                placeholder="Feel free to leave any questions or comments here..." rows="3"
+                                style="margin-bottom: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);"></textarea>
+                            <button class="btn btn-primary" id="submit-comment-btn"
+                                onclick="submitComment({{ project.id }})">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
                                 </svg>
                                 Send Comment
                             </button>
@@ -203,18 +217,37 @@
                         <!-- Comments List -->
                         <div id="comments-container" style="display: flex; flex-direction: column; gap: 1rem;">
                             {% if comments %}
-                                {% for comment in comments %}
-                                <div class="comment-item" style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span style="font-weight: 500;">{{ comment.user_name }}</span>
-                                        <span class="badge badge-secondary text-xs">{{ comment.user_type }}</span>
-                                        <span class="text-xs text-gray-500">{{ comment.created_at }}</span>
-                                    </div>
-                                    <p class="text-gray-700 mb-2" style="white-space: pre-wrap;">{{ comment.comment }}</p>
+                            {% for comment in comments %}
+                            <div class="comment-item" data-comment-id="{{ comment.id }}"
+                                style="border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span style="font-weight: 500;">{{ comment.user_name }}</span>
+                                    <span class="badge badge-secondary text-xs">{{ comment.user_type }}</span>
+                                    <span class="text-xs text-gray-500">{{ comment.created_at }}</span>
                                 </div>
-                                {% endfor %}
+                                <p class="text-gray-700 mb-2" style="white-space: pre-wrap;">{{ comment.comment }}</p>
+                                {% if can_comment %}
+                                <button class="btn-reply" onclick="showReplyBox({{ comment.id }})" 
+                                    style="background: none; border: none; color: var(--primary-green); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.875rem; text-decoration: underline;">
+                                    Reply
+                                </button>
+                                {% endif %}
+                                <div id="reply-box-{{ comment.id }}" style="display: none; margin-top: 0.5rem; margin-left: 1rem;">
+                                    <textarea id="reply-text-{{ comment.id }}" placeholder="Write your reply..." rows="2"
+                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); margin-bottom: 0.5rem; font-size: 0.875rem;"></textarea>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button class="btn btn-primary" onclick="submitReply({{ project.id }}, {{ comment.id }})"
+                                            style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Send</button>
+                                        <button class="btn" onclick="hideReplyBox({{ comment.id }})"
+                                            style="padding: 0.25rem 0.75rem; font-size: 0.875rem; background-color: #f3f4f6;">Cancel</button>
+                                    </div>
+                                </div>
+                                <div id="replies-{{ comment.id }}" class="replies-container" style="margin-left: 1rem; margin-top: 0.5rem;"></div>
+                            </div>
+                            {% endfor %}
                             {% else %}
-                                <p class="text-gray-500 text-center py-4">No comments yet. Be the first to ask a question!</p>
+                            <p class="text-gray-500 text-center py-4">No comments yet. Be the first to ask a question!
+                            </p>
                             {% endif %}
                         </div>
                     </div>
@@ -231,49 +264,60 @@
                             <span>{{ registration_count or 0 }}/{{ project.max_participants }}</span>
                         </div>
                         <div class="progress-bar mb-4">
-                            {% set progress = ((registration_count or 0) / project.max_participants * 100) | round(0) | int %}
+                            {% set progress = ((registration_count or 0) / project.max_participants * 100) | round(0) |
+                            int %}
                             <div class="progress-fill" style="width: {{ progress }}%;"></div>
                         </div>
                         {% if is_registered %}
-                        <button class="btn" id="register-btn" style="width: 100%; background-color: #dcfce7; color: var(--primary-green);" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <polyline points="20 6 9 17 4 12"/>
+                        <button class="btn" id="register-btn"
+                            style="width: 100%; background-color: #dcfce7; color: var(--primary-green);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <polyline points="20 6 9 17 4 12" />
                             </svg>
                             Already Registered
                         </button>
                         {% elif not user_type %}
-                        <button class="btn" id="register-btn" style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <button class="btn" id="register-btn"
+                            style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             Login to Register
                         </button>
                         {% elif user_type == 'admin' %}
-                        <button class="btn" id="register-btn" style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <button class="btn" id="register-btn"
+                            style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             Register Now (Admin Not Allowed)
                         </button>
                         {% elif user_type == 'organization' %}
-                        <button class="btn" id="register-btn" style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <button class="btn" id="register-btn"
+                            style="width: 100%; background-color: #f3f4f6; color: var(--gray-500);" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             Register Now (Organization Not Allowed)
                         </button>
                         {% else %}
-                        <button class="btn btn-primary" id="register-btn" style="width: 100%;" onclick="registerForProject({{ project.id }})">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <button class="btn btn-primary" id="register-btn" style="width: 100%;"
+                            onclick="registerForProject({{ project.id }})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                             </svg>
                             Register Now
                         </button>
@@ -288,16 +332,18 @@
                     </div>
                     <div class="card-content">
                         <div class="flex items-center gap-2 mb-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="color: var(--gray-500);">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                             </svg>
-                            <span>{{ (organization.display_name or organization.username) if organization else 'Organization Name' }}</span>
+                            <span>{{ (organization.display_name or organization.username) if organization else
+                                'Organization Name' }}</span>
                         </div>
                         <p class="text-sm text-gray-600 mb-4">
                             {% if organization and organization.description %}
-                                {{ organization.description }}
+                            {{ organization.description }}
                             {% else %}
-                                Organization description not available.
+                            Organization description not available.
                             {% endif %}
                         </p>
                         <button class="btn btn-outline" style="width: 100%;">View More Projects</button>
@@ -308,10 +354,11 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="flex items-center gap-2" style="margin: 0; font-size: 1rem;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 16v-4"/>
-                                <path d="M12 8h.01"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
                             </svg>
                             Sustainability Rating
                         </h3>
@@ -319,19 +366,26 @@
                     <div class="card-content">
                         <div class="mb-3">{{ render_stars(project.rating or 0.0, '16') }}</div>
                         <p class="text-sm text-gray-600 mb-4">
-                            This project aligns with the UN Sustainable Development Goals (SDGs), having positive impacts on environmental protection and social development.
+                            This project aligns with the UN Sustainable Development Goals (SDGs), having positive
+                            impacts on environmental protection and social development.
                         </p>
                         <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.875rem;">
                             <div class="flex items-center gap-2">
-                                <div style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;"></div>
+                                <div
+                                    style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;">
+                                </div>
                                 <span>Environmental Impact: ★★★★★</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;"></div>
+                                <div
+                                    style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;">
+                                </div>
                                 <span>Social Value: ★★★★☆</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <div style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;"></div>
+                                <div
+                                    style="width: 0.5rem; height: 0.5rem; background-color: var(--primary-green); border-radius: 50%;">
+                                </div>
                                 <span>Educational Significance: ★★★★★</span>
                             </div>
                         </div>
@@ -340,15 +394,16 @@
             </div>
         </div>
     </div>
-    
+
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script>
         async function registerForProject(projectId) {
             const btn = document.getElementById('register-btn');
             if (!btn) return;
-            
+
             btn.disabled = true;
             btn.textContent = 'Registering...';
-            
+
             try {
                 const response = await fetch(`/api/v1/projects/${projectId}/registrations`, {
                     method: 'POST',
@@ -356,9 +411,9 @@
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 const result = await response.json();
-                
+
                 // Check if user is not authenticated
                 if (response.status === 401) {
                     // Redirect to login page
@@ -385,56 +440,68 @@
                 btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Register Now';
             }
         }
-        
-        async function submitComment(projectId) {
-            const textarea = document.getElementById('comment-text');
-            const submitBtn = document.getElementById('submit-comment-btn');
+
+        async function submitComment(projectId, parentId = null) {
+            const textarea = parentId ? document.getElementById(`reply-text-${parentId}`) : document.getElementById('comment-text');
+            const submitBtn = parentId ? document.querySelector(`#reply-box-${parentId} .btn-primary`) : document.getElementById('submit-comment-btn');
             if (!textarea || !submitBtn) return;
-            
+
             const comment = textarea.value.trim();
             if (!comment) {
                 alert('Please enter a comment.');
                 return;
             }
-            
+
             // Disable button during submission
             submitBtn.disabled = true;
             const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Sending...';
-            
+            submitBtn.innerHTML = 'Sending...';
+
             try {
+                const requestBody = { comment: comment };
+                if (parentId) {
+                    requestBody.parent_id = parentId;
+                }
+
                 const response = await fetch(`/api/v1/projects/${projectId}/comments`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ comment: comment })
+                    body: JSON.stringify(requestBody)
                 });
-                
+
                 const result = await response.json();
-                
+
                 // Check if user is not authenticated
                 if (response.status === 401) {
                     // Redirect to login page
                     window.location.href = '/login';
                     return;
                 }
-                
+
                 if (response.ok || response.status === 201) {
                     // Clear textarea
                     textarea.value = '';
                     
-                    // Add new comment to the list
-                    addCommentToDOM(result);
-                    
-                    // Show success message briefly
-                    const successMsg = document.createElement('div');
-                    successMsg.textContent = 'Comment posted successfully!';
-                    successMsg.style.cssText = 'background-color: #dcfce7; color: var(--primary-green); padding: 0.5rem 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; font-size: 0.875rem;';
-                    const container = document.getElementById('comments-container');
-                    if (container) {
-                        container.insertBefore(successMsg, container.firstChild);
-                        setTimeout(() => successMsg.remove(), 3000);
+                    if (parentId) {
+                        // Hide reply box
+                        hideReplyBox(parentId);
+                        // Add reply to the replies container
+                        addReplyToDOM(parentId, result);
+                    } else {
+                        // Add new comment to the list
+                        addCommentToDOM(result);
+
+                        // Show success message briefly
+                        const successMsg = document.createElement('div');
+                        successMsg.textContent = 'Comment posted successfully!';
+                        successMsg.style.cssText = 'background-color: #dcfce7; color: var(--primary-green); padding: 0.5rem 1rem; border-radius: var(--border-radius); margin-bottom: 1rem; font-size: 0.875rem;';
+                        const container = document.getElementById('comments-container');
+                        if (container) {
+                            container.insertBefore(successMsg, container.firstChild);
+                            setTimeout(() => successMsg.remove(), 3000);
+                        }
                     }
                 } else {
                     alert('Error: ' + (result.error || 'Failed to submit comment'));
@@ -447,22 +514,56 @@
                 submitBtn.innerHTML = originalText;
             }
         }
-        
+
+        async function submitReply(projectId, parentId) {
+            await submitComment(projectId, parentId);
+        }
+
+        function showReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            if (replyBox) {
+                replyBox.style.display = 'block';
+                const textarea = document.getElementById(`reply-text-${commentId}`);
+                if (textarea) {
+                    textarea.focus();
+                }
+            }
+        }
+
+        function hideReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            const textarea = document.getElementById(`reply-text-${commentId}`);
+            if (replyBox) {
+                replyBox.style.display = 'none';
+            }
+            if (textarea) {
+                textarea.value = '';
+            }
+        }
+
         function addCommentToDOM(comment) {
             const container = document.getElementById('comments-container');
             if (!container) return;
-            
+
             // Remove "no comments" message if exists
             const noCommentsMsg = container.querySelector('p.text-gray-500');
             if (noCommentsMsg) {
                 noCommentsMsg.remove();
             }
-            
+
             // Create comment element
             const commentDiv = document.createElement('div');
             commentDiv.className = 'comment-item';
+            commentDiv.setAttribute('data-comment-id', comment.id);
             commentDiv.style.cssText = 'border-left: 4px solid #dcfce7; padding-left: 1rem; padding-top: 0.5rem; padding-bottom: 0.5rem;';
-            
+
+            const replyButtonHtml = CAN_COMMENT ? `
+                <button class="btn-reply" onclick="showReplyBox(${comment.id})" 
+                    style="background: none; border: none; color: var(--primary-green); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.875rem; text-decoration: underline;">
+                    Reply
+                </button>
+            ` : '';
+
             commentDiv.innerHTML = `
                 <div class="flex items-center gap-2 mb-2">
                     <span style="font-weight: 500;">${comment.user_name || 'Unknown'}</span>
@@ -470,18 +571,53 @@
                     <span class="text-xs text-gray-500">${comment.created_at || 'Just now'}</span>
                 </div>
                 <p class="text-gray-700 mb-2" style="white-space: pre-wrap;">${comment.comment || ''}</p>
+                ${replyButtonHtml}
+                <div id="reply-box-${comment.id}" style="display: none; margin-top: 0.5rem; margin-left: 1rem;">
+                    <textarea id="reply-text-${comment.id}" placeholder="Write your reply..." rows="2"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius); margin-bottom: 0.5rem; font-size: 0.875rem;"></textarea>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="submitReply(PROJECT_ID, ${comment.id})"
+                            style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Send</button>
+                        <button class="btn" onclick="hideReplyBox(${comment.id})"
+                            style="padding: 0.25rem 0.75rem; font-size: 0.875rem; background-color: #f3f4f6;">Cancel</button>
+                    </div>
+                </div>
+                <div id="replies-${comment.id}" class="replies-container" style="margin-left: 1rem; margin-top: 0.5rem;"></div>
             `;
-            
+
             // Insert at the top
             container.insertBefore(commentDiv, container.firstChild);
         }
-        
+
+        function addReplyToDOM(parentId, reply) {
+            const repliesContainer = document.getElementById(`replies-${parentId}`);
+            if (!repliesContainer) return;
+
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'reply-item';
+            replyDiv.style.cssText = 'border-left: 2px solid #e5e7eb; padding-left: 0.75rem; padding-top: 0.5rem; padding-bottom: 0.5rem; margin-bottom: 0.5rem;';
+
+            replyDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-1">
+                    <span style="font-weight: 500; font-size: 0.875rem;">${reply.user_name || 'Unknown'}</span>
+                    <span class="badge badge-secondary text-xs" style="font-size: 0.75rem;">${reply.user_type || 'User'}</span>
+                    <span class="text-xs text-gray-500">${reply.created_at || 'Just now'}</span>
+                </div>
+                <p class="text-gray-700" style="white-space: pre-wrap; font-size: 0.875rem;">${reply.comment || ''}</p>
+            `;
+
+            repliesContainer.appendChild(replyDiv);
+        }
+
+        // Global variables for comment functionality
+        const PROJECT_ID = {{ project.id }};
+        const CAN_COMMENT = {{ 'true' if can_comment else 'false' }};
+
         // Load comments on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const projectId = {{ project.id }};
-            loadComments(projectId);
+        document.addEventListener('DOMContentLoaded', function () {
+            loadComments(PROJECT_ID);
         });
-        
+
         async function loadComments(projectId) {
             try {
                 const response = await fetch(`/api/v1/projects/${projectId}/comments`);
@@ -489,27 +625,36 @@
                     throw new Error('Failed to load comments');
                 }
                 const comments = await response.json();
-                
+
                 const container = document.getElementById('comments-container');
                 if (!container) return;
-                
+
                 // Clear existing comments (keep the structure)
                 container.innerHTML = '';
-                
+
                 if (comments.length === 0) {
                     container.innerHTML = '<p class="text-gray-500 text-center py-4">No comments yet. Be the first to ask a question!</p>';
                     return;
                 }
-                
-                // Render comments
+
+                // Render comments with replies
                 comments.forEach(comment => {
                     addCommentToDOM(comment);
+                    // Render replies if any
+                    if (comment.replies && comment.replies.length > 0) {
+                        const repliesContainer = document.getElementById(`replies-${comment.id}`);
+                        if (repliesContainer) {
+                            comment.replies.forEach(reply => {
+                                addReplyToDOM(comment.id, reply);
+                            });
+                        }
+                    }
                 });
             } catch (error) {
                 console.error('Error loading comments:', error);
             }
         }
     </script>
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </body>
+
 </html>

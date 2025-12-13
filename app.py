@@ -93,7 +93,57 @@ def init_db(app: Flask) -> None:
     """Initialize the database schema and seed initial data."""
     with app.app_context():
         db.create_all()
+        
+        # database migrations for SQLite compatibility (manually handling schema evolution)
+        
+        # Migrate: add min_participants column if it doesn't exist
+        try:
+            db.session.execute(text("SELECT min_participants FROM project LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE project ADD COLUMN min_participants INTEGER DEFAULT 1"))
+                db.session.commit()
+                app.logger.info("Migration: Added min_participants column to project table")
+            except Exception as e:
+                db.session.rollback()
+                app.logger.warning(f"Migration warning: {e}")
+        
+        # Check if notification table exists
+        try:
+            db.session.execute(text("SELECT id FROM notification LIMIT 1"))
+            # Notification table exists
+        except Exception:
+            # Silent catch, create_all should have handled it
+            db.session.rollback()
 
+        # Migrate: add ban fields if missing
+        try:
+            db.session.execute(text("SELECT ban_until, ban_reason FROM user LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE user ADD COLUMN ban_until DATETIME"))
+            except Exception:
+                db.session.rollback()
+            try:
+                db.session.execute(text("ALTER TABLE user ADD COLUMN ban_reason VARCHAR(500)"))
+            except Exception:
+                db.session.rollback()
+            db.session.commit()
+            app.logger.info("Migration: Added ban_until/ban_reason columns to user table")
+        
+        # Migrate: add parent_id column to comment table if missing (for reply functionality)
+        try:
+            db.session.execute(text("SELECT parent_id FROM comment LIMIT 1"))
+        except Exception:
+            try:
+                db.session.execute(text("ALTER TABLE comment ADD COLUMN parent_id INTEGER"))
+                db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_comment_parent_id ON comment(parent_id)"))
+                db.session.commit()
+                app.logger.info("Migration: Added parent_id column to comment table")
+            except Exception as e:
+                db.session.rollback()
+                app.logger.warning(f"Migration warning (parent_id): {e}")
+        
         # Initialize default system settings if they don't exist
         if not SystemSettings.query.filter_by(key='points_per_hour').first():
             SystemSettings.set_setting('points_per_hour', '20')
