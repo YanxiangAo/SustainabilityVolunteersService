@@ -1,0 +1,309 @@
+/**
+ * Layout CSS - Page Structure and Navigation
+ * ============================================================
+ * Contains: Header, Sidebar, Footer, Main Content, Navigation
+ * Dependencies: base.css, components.css
+ * ============================================================
+ */
+
+/* ============================================================
+ * Header
+ * ============================================================ */
+
+.header {
+    background-color: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-green);
+    text-decoration: none;
+}
+
+.logo svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* ============================================================
+ * Sidebar (Dashboard Navigation)
+ * ============================================================ */
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 16rem;
+    background-color: var(--white);
+    border-right: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    overflow-y: auto;
+    z-index: 50;
+}
+
+.sidebar-header {
+    font-weight: 700;
+    color: var(--primary-green);
+    margin-bottom: 2rem;
+    font-size: 1.25rem;
+}
+
+nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.nav-item:hover {
+    background-color: var(--gray-50);
+}
+
+.nav-item.active {
+    background-color: #dcfce7;
+    color: var(--primary-green);
+}
+
+.nav-item svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* ============================================================
+ * Main Content Area
+ * ============================================================ */
+
+.main-content {
+    margin-left: 16rem;
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+/* ============================================================
+ * Hero Section
+ * ============================================================ */
+
+.hero {
+    background: linear-gradient(to right, var(--primary-green), var(--primary-green-light));
+    color: var(--white);
+    padding: 5rem 0;
+    text-align: center;
+}
+
+.hero h2 {
+    color: var(--white);
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+/* ============================================================
+ * Footer
+ * ============================================================ */
+
+.footer {
+    background-color: var(--gray-900);
+    color: var(--white);
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.footer p {
+    color: var(--gray-400);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* ============================================================
+ * Modal / Overlay
+ * ============================================================ */
+
+.modal-overlay,
+.custom-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.custom-modal-overlay.hidden {
+    display: none;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.custom-modal {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 90%;
+    max-width: 420px;
+    overflow: hidden;
+    animation: modalSlideIn 0.25s ease-out;
+}
+
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.custom-modal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.custom-modal-close {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.custom-modal-close:hover {
+    background-color: var(--gray-100);
+    color: var(--gray-600);
+}
+
+.custom-modal-body {
+    padding: 16px 24px 24px;
+}
+
+.custom-modal-message {
+    color: var(--gray-600);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+.custom-modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    background-color: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+}
+
+.custom-modal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+}
+
+.custom-modal-btn-primary {
+    background: var(--primary-green);
+    color: white;
+}
+
+.custom-modal-btn-primary:hover {
+    background: var(--primary-green-dark);
+}
+
+.custom-modal-btn-secondary {
+    background: var(--white);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+}
+
+.custom-modal-btn-secondary:hover {
+    background: var(--gray-200);
+}
+
+/* ============================================================
+ * Responsive - Sidebar Hidden on Mobile
+ * ============================================================ */
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+}

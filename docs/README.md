@@ -1,6 +1,20 @@
 # Sustainable Volunteer Service Platform
 
+> **Repository URL**: [https://github.com/YOUR_USERNAME/SustainabilityVolunteersService](https://github.com/YOUR_USERNAME/SustainabilityVolunteersService)  
+> *(Replace with your actual repository URL)*
+
 A web application connecting volunteers with organizations to practice sustainable development goals.
+
+## Author Declaration
+
+**Project Author**: [Your Name Here]  
+**Student ID**: [Your Student ID]  
+**Course**: [Course Name]  
+**Date**: 2024-2025
+
+*I declare that this project is my own original work. All external code, libraries, and resources used have been properly cited and attributed.*
+
+---
 
 ## Features
 
@@ -10,6 +24,8 @@ A web application connecting volunteers with organizations to practice sustainab
 - **Volunteer Hours Tracking**: Track and certify volunteer hours
 - **Points & Badges System**: Earn points and achievement badges
 - **Responsive Design**: Works on desktop and tablet devices
+- **Theme Customization**: Dark/Light mode with role-based color schemes (A-level)
+- **Background Patterns**: Customizable UI backgrounds (A-level)
 
 ## Technology Stack
 
@@ -25,7 +41,15 @@ A web application connecting volunteers with organizations to practice sustainab
 pip install -r requirements.txt
 ```
 
-2. Run the Flask application:
+2. Configure environment variables (for production):
+```bash
+export SECRET_KEY="your-secure-secret-key"
+export ADMIN_USERNAME="admin"
+export ADMIN_EMAIL="admin@example.com"
+export ADMIN_PASSWORD="your-secure-admin-password"
+```
+
+3. Run the Flask application:
 ```bash
 # Option A: using Flask CLI
 set FLASK_APP=app.py & set FLASK_ENV=development & flask run
@@ -34,18 +58,24 @@ set FLASK_APP=app.py & set FLASK_ENV=development & flask run
 python app.py
 ```
 
-3. Open your browser and navigate to:
+4. Open your browser and navigate to:
 ```
 http://localhost:5000
 ```
 
-## Default Admin Credentials
+## Security Configuration
 
-- Username: `admin`
-- Password: `admin123`
-- User Type: Administrator
+### Admin Credentials
 
-**⚠️ Important: Change the default admin password after first login!**
+**For Development Only:**
+If `ADMIN_PASSWORD` environment variable is not set, a secure random password will be auto-generated and printed to the console. Save this password immediately!
+
+**For Production:**
+- Always set the `ADMIN_PASSWORD` environment variable
+- Never commit credentials to version control
+- Use a strong, unique password
+
+**⚠️ Important: The application no longer uses hardcoded default passwords for security.**
 
 ## Project Structure
 

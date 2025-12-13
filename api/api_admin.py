@@ -26,26 +26,41 @@ def api_get_settings():
 @bp.route('/api/v1/admin/settings', methods=['POST'])
 @login_required
 def api_save_settings():
-    """Save system settings."""
+    """
+    Save system settings.
+    Validates all input values before saving.
+    Admin only endpoint.
+    """
     if current_user.user_type != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
     
     data = request.get_json() or {}
     
-    # Save points per hour
+    # Validate and save points per hour
     if 'points_per_hour' in data:
-        points = int(data['points_per_hour'])
-        if points < 1:
-            return jsonify({'error': 'Points per hour must be at least 1'}), 400
-        SystemSettings.set_setting('points_per_hour', points)
+        try:
+            points = int(data['points_per_hour'])
+            if points < 1:
+                return jsonify({'error': 'Points per hour must be at least 1'}), 400
+            if points > 1000:
+                return jsonify({'error': 'Points per hour cannot exceed 1000'}), 400
+            SystemSettings.set_setting('points_per_hour', str(points))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Points per hour must be a valid number'}), 400
     
-    # Save auto-approve setting
+    # Validate and save auto-approve setting (must be boolean-like)
     if 'auto_approve_under_hours' in data:
-        SystemSettings.set_setting('auto_approve_under_hours', str(data['auto_approve_under_hours']).lower())
+        value = data['auto_approve_under_hours']
+        if not isinstance(value, bool) and str(value).lower() not in ('true', 'false'):
+            return jsonify({'error': 'auto_approve_under_hours must be true or false'}), 400
+        SystemSettings.set_setting('auto_approve_under_hours', str(value).lower())
     
-    # Save project review requirement
+    # Validate and save project review requirement (must be boolean-like)
     if 'project_requires_review' in data:
-        SystemSettings.set_setting('project_requires_review', str(data['project_requires_review']).lower())
+        value = data['project_requires_review']
+        if not isinstance(value, bool) and str(value).lower() not in ('true', 'false'):
+            return jsonify({'error': 'project_requires_review must be true or false'}), 400
+        SystemSettings.set_setting('project_requires_review', str(value).lower())
     
     return jsonify({
         'message': 'Settings saved successfully',
@@ -77,3 +92,45 @@ def dev_users():
         } for u in users
     ])
 
+
+@bp.route('/api/v1/admin/logs', methods=['GET'])
+@login_required
+def api_get_logs():
+    """
+    Get application logs.
+    Admin only endpoint for viewing server logs.
+    """
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    import os
+    from config import Config
+    
+    log_file = Config.LOG_FILE
+    lines = int(request.args.get('lines', 100))  # Default to last 100 lines
+    level_filter = request.args.get('level', '').upper()  # Optional: INFO, WARNING, ERROR
+    
+    if not os.path.exists(log_file):
+        return jsonify({
+            'logs': [],
+            'message': 'No log file found. Logs will appear after server activity.'
+        })
+    
+    try:
+        with open(log_file, 'r') as f:
+            all_lines = f.readlines()
+        
+        # Get last N lines
+        log_lines = all_lines[-lines:]
+        
+        # Filter by level if specified
+        if level_filter:
+            log_lines = [line for line in log_lines if level_filter in line]
+        
+        return jsonify({
+            'logs': log_lines,
+            'total_lines': len(all_lines),
+            'showing': len(log_lines)
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to read logs: {str(e)}'}), 500

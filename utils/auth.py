@@ -43,11 +43,36 @@ def login():
         ).first()
 
         if user and user.check_password(form.password.data or ''):
-            # Check if user is active
+            # Check if user is banned/disabled
             if hasattr(user, 'is_active') and not user.is_active:
-                return _render_login_template(
-                    error='Your account has been disabled. Please contact an administrator.'
-                )
+                # Check if temporary ban has expired
+                if hasattr(user, 'ban_until') and user.ban_until:
+                    from datetime import datetime
+                    if datetime.utcnow() >= user.ban_until:
+                        # Ban expired, reactivate user
+                        user.is_active = True
+                        user.ban_reason = None
+                        user.ban_until = None
+                        db.session.commit()
+                    else:
+                        # Still banned, show remaining time
+                        remaining = user.ban_until - datetime.utcnow()
+                        days = remaining.days
+                        hours = remaining.seconds // 3600
+                        reason = user.ban_reason or 'No reason provided'
+                        if days > 0:
+                            time_str = f'{days} day(s) and {hours} hour(s)'
+                        else:
+                            time_str = f'{hours} hour(s)'
+                        return _render_login_template(
+                            error=f'Your account is temporarily suspended. Reason: {reason}. Time remaining: {time_str}'
+                        )
+                else:
+                    # Permanent ban
+                    reason = getattr(user, 'ban_reason', None) or 'No reason provided'
+                    return _render_login_template(
+                        error=f'Your account has been permanently disabled. Reason: {reason}. Please contact an administrator.'
+                    )
             
             # Use Flask-Login to log in the user
             login_user(user, remember=bool(form.remember.data))

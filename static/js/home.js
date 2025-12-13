@@ -1,8 +1,28 @@
-// Render sustainability rating
+/**
+ * home.js - Home Page Script
+ * Handles the public home page functionality:
+ * - Fetches and displays available volunteer projects
+ * - Renders project cards with sustainability ratings
+ * - Allows users to browse projects without logging in (B-level requirement)
+ */
+
+/**
+ * Renders a sustainability rating display with stars
+ * @param {number} rating - Rating value from 0-5
+ * @returns {string} HTML string for the rating display
+ */
+/**
+ * Renders a sustainability rating display with stars
+ * @param {number} rating - Rating value from 0-5
+ * @returns {string} HTML string for the rating display
+ */
 function renderRating(rating) {
+    // Determine color class based on rating level
     const colorClass = rating < 3 ? 'rating-low' : rating < 4 ? 'rating-medium' : 'rating-high';
-    const bgColor = rating < 3 ? '#f3f4f6' : rating < 4 ? '#fef3c7' : '#dcfce7';
-    
+    // Badge class for the rating value
+    const badgeClass = rating < 3 ? 'rating-badge-low' : rating < 4 ? 'rating-badge-medium' : 'rating-badge-high';
+
+    // Generate star SVGs (filled or empty based on rating)
     let starsHTML = '<div class="stars">';
     for (let i = 1; i <= 5; i++) {
         const filled = i <= rating ? 'filled' : '';
@@ -13,16 +33,21 @@ function renderRating(rating) {
         `;
     }
     starsHTML += '</div>';
-    
+
     return `
         <div class="sustainability-rating ${colorClass}">
             ${starsHTML}
-            <span class="rating-badge" style="background-color: ${bgColor};">${rating.toFixed(1)}</span>
+            <span class="rating-badge ${badgeClass}">${rating.toFixed(1)}</span>
         </div>
     `;
 }
 
-// Render project card
+/**
+ * Renders a project card with all project details
+ * Clicking the card navigates to the project detail page
+ * @param {Object} project - Project data object
+ * @returns {string} HTML string for the project card
+ */
 function renderProjectCard(project) {
     return `
         <div class="card project-card" onclick="window.location.href='/project/${project.id}'">
@@ -31,12 +56,12 @@ function renderProjectCard(project) {
                     <span class="badge badge-primary">${project.category}</span>
                     ${renderRating(project.rating)}
                 </div>
-                <h3 style="margin-bottom: 0.5rem;">${project.title}</h3>
+                <h3 class="mb-2">${project.title}</h3>
                 <p class="text-sm text-gray-600">${project.organization_name ?? ''}</p>
             </div>
             <div class="card-content">
-                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.875rem; color: var(--gray-600);">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div class="project-info-list">
+                    <div class="project-info-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -45,14 +70,14 @@ function renderProjectCard(project) {
                         </svg>
                         ${project.date}
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="project-info-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                             <circle cx="12" cy="10" r="3"/>
                         </svg>
                         ${project.location}
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="project-info-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                             <circle cx="9" cy="7" r="4"/>
@@ -69,7 +94,7 @@ function renderProjectCard(project) {
 
 async function fetchProjects() {
     try {
-        const response = await fetch('/api/v1/projects?status=approved&available=true');
+        const response = await fetch('/api/v1/projects?available=true');
         if (!response.ok) {
             throw new Error('Failed to load projects');
         }
@@ -86,12 +111,12 @@ async function fetchProjects() {
 }
 
 // Load projects on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const projectsGrid = document.getElementById('projects-grid');
     if (projectsGrid) {
         fetchProjects().then(projects => {
             if (!projects.length) {
-                projectsGrid.innerHTML = '<p class="text-gray-500 text-center py-8">No approved projects are available at the moment.</p>';
+                projectsGrid.innerHTML = '<p class="text-gray-500 text-center py-8">No projects are available at the moment.</p>';
                 return;
             }
             projectsGrid.innerHTML = projects.map(project => renderProjectCard(project)).join('');

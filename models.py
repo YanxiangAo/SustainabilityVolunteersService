@@ -17,6 +17,9 @@ class User(UserMixin, db.Model):
     display_name = db.Column(db.String(120))
     description = db.Column(db.Text)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    # Ban system fields
+    ban_reason = db.Column(db.String(500))  # Reason for ban (shown to user)
+    ban_until = db.Column(db.DateTime)  # NULL = permanent ban when is_active=False
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     projects = relationship('Project', backref='organization', lazy=True)
@@ -41,10 +44,11 @@ class Project(db.Model):
     date = db.Column(db.Date, nullable=False)
     location = db.Column(db.String(200), nullable=False)
     max_participants = db.Column(db.Integer, nullable=False)
+    min_participants = db.Column(db.Integer, default=1)  # Minimum participants to start
     duration = db.Column(db.Float, nullable=False)  # hours
     points = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, default=0.0)
-    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected, completed
+    status = db.Column(db.String(20), default='pending')  # pending, approved, in_progress, rejected, completed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     requirements = db.Column(db.Text)
     
@@ -127,3 +131,16 @@ class SystemSettings(db.Model):
             db.session.add(setting)
         db.session.commit()
         return setting
+
+
+class Notification(db.Model):
+    """System notifications for users."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # system, approval, rejection, info
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = relationship('User', backref='notifications', lazy=True)

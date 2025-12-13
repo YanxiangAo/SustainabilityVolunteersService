@@ -31,6 +31,7 @@ def api_users_me_dashboard():
 
             registration_payload.append({
                 'id': project.id,
+                'registration_id': registration.id,
                 'title': project.title,
                 'organization_name': project.organization.display_name or project.organization.username if project.organization else None,
                 'date': project.date.strftime('%Y-%m-%d'),
@@ -192,6 +193,8 @@ def api_users_me_dashboard():
                 'email': u.email,
                 'user_type': u.user_type,
                 'is_active': u.is_active if hasattr(u, 'is_active') else True,
+                'ban_reason': getattr(u, 'ban_reason', None),
+                'ban_until': u.ban_until.isoformat() if getattr(u, 'ban_until', None) else None,
                 'created_at': u.created_at.strftime('%Y-%m-%d') if u.created_at else None
             })
         
@@ -202,4 +205,3 @@ def api_users_me_dashboard():
         })
     
     return jsonify({'error': 'Invalid user type'}), 400
-

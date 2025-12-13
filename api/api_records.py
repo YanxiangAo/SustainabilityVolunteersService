@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
-from models import db, Project, VolunteerRecord
+from models import db, Project, VolunteerRecord, Notification
 
 bp = Blueprint('api_records', __name__)
 
@@ -119,6 +119,8 @@ def api_record_update(record_id):
     record = VolunteerRecord.query.get_or_404(record_id)
     data = request.get_json() or {}
     
+    old_status = record.status
+    
     if 'status' in data:
         allowed_statuses = {'pending', 'approved', 'rejected'}
         if data['status'] not in allowed_statuses:
@@ -126,6 +128,26 @@ def api_record_update(record_id):
         record.status = data['status']
     
     db.session.commit()
+    
+    # Create notification when volunteer hours are approved/rejected
+    if record.status != old_status and record.status in ('approved', 'rejected'):
+        project = record.project
+        if record.status == 'approved':
+            notification_title = 'Volunteer Hours Approved'
+            notification_message = f'Your {record.hours}h of volunteer work for "{project.title if project else "a project"}" has been approved!'
+        else:
+            notification_title = 'Volunteer Hours Not Approved'
+            notification_message = f'Your volunteer record for "{project.title if project else "a project"}" was not approved.'
+        
+        notification = Notification(
+            user_id=record.user_id,
+            type='record',
+            title=notification_title,
+            message=notification_message
+        )
+        db.session.add(notification)
+        db.session.commit()
+    
     return jsonify({
         'id': record.id,
         'status': record.status,

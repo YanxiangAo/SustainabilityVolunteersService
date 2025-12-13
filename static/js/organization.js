@@ -1,14 +1,14 @@
 // Tab switching
 document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
-    item.addEventListener('click', function() {
+    item.addEventListener('click', function () {
         const tabName = this.getAttribute('data-tab');
-        
+
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
+
         this.classList.add('active');
         document.getElementById(tabName + '-tab').classList.add('active');
-        
+
         // Load data when switching to specific tabs
         if (tabName === 'manage') {
             loadProjects();
@@ -56,7 +56,7 @@ function updateStatistics(stats) {
     const participantsEl = document.getElementById('org-stat-participants');
     const completedEl = document.getElementById('org-stat-completed');
     const pendingEl = document.getElementById('org-stat-pending');
-    
+
     if (activeEl) activeEl.textContent = stats.active_projects || 0;
     if (participantsEl) participantsEl.textContent = stats.total_participants || 0;
     if (completedEl) completedEl.textContent = stats.completed || 0;
@@ -122,31 +122,31 @@ function renderRecentProjectCard(project) {
 function renderRecentProjects(recentProjects) {
     const container = document.getElementById('recent-projects-container');
     if (!container) return;
-    
+
     if (!recentProjects || recentProjects.length === 0) {
         container.innerHTML = '<p class="text-gray-500 text-center py-6">No projects created in the last 7 days.</p>';
         return;
     }
-    
+
     container.innerHTML = recentProjects.map(project => renderRecentProjectCard(project)).join('');
 }
 
 function renderProjects(projects) {
     const container = document.getElementById('projects-list');
     if (!container) return;
-    
+
     if (!projects.length) {
         container.innerHTML = '<p class="text-gray-500 text-center py-6">You have not created any projects yet.</p>';
         return;
     }
-    
+
     container.innerHTML = projects.map(project => {
-        const statusBadge = project.status === 'approved' ? 
+        const statusBadge = project.status === 'approved' ?
             '<span class="badge badge-success">Approved</span>' :
             project.status === 'pending' ?
-            '<span class="badge badge-orange">Pending</span>' :
-            '<span class="badge badge-secondary">' + project.status + '</span>';
-        
+                '<span class="badge badge-orange">Pending</span>' :
+                '<span class="badge badge-secondary">' + project.status + '</span>';
+
         return `
             <div class="card mb-4">
                 <div class="card-content">
@@ -190,10 +190,10 @@ async function loadRegistrations() {
         if (dashboardData.error) {
             throw new Error(dashboardData.error);
         }
-        
+
         const projects = dashboardData.projects || [];
         const projectsWithRegistrations = [];
-        
+
         // Load registrations for each project
         for (const project of projects) {
             try {
@@ -218,12 +218,12 @@ async function loadRegistrations() {
                 console.error(`Failed to load registrations for project ${project.id}:`, err);
             }
         }
-        
+
         const data = { projects: projectsWithRegistrations };
-        
+
         const container = document.querySelector('#registrations-tab');
         if (!container) return;
-        
+
         if (!data.projects || data.projects.length === 0) {
             container.innerHTML = `
                 <div class="mb-8">
@@ -238,7 +238,7 @@ async function loadRegistrations() {
             `;
             return;
         }
-        
+
         // Render all projects with their registrations
         let html = `
             <div class="mb-8">
@@ -246,12 +246,12 @@ async function loadRegistrations() {
                 <p class="text-gray-600">View and manage project registrations</p>
             </div>
         `;
-        
+
         for (const projectData of data.projects) {
             const rowsHtml = projectData.registrations.map(reg => {
                 const meta = getRegistrationStatusMeta(reg.status);
                 let actions = '<span class="text-sm text-gray-400">No actions</span>';
-                
+
                 if (reg.status === 'registered') {
                     actions = `
                         <div class="flex gap-2">
@@ -267,7 +267,7 @@ async function loadRegistrations() {
                         </div>
                     `;
                 }
-                
+
                 return `
                     <tr>
                         <td>${reg.participant_name}</td>
@@ -278,11 +278,11 @@ async function loadRegistrations() {
                     </tr>
                 `;
             }).join('');
-            
+
             const isCompleted = projectData.project_status === 'completed';
             const hasApprovedRegistrations = projectData.registrations.some(reg => reg.status === 'approved');
             const canComplete = !isCompleted && hasApprovedRegistrations;
-            
+
             html += `
                 <div class="card mb-6" id="project-registrations-${projectData.project_id}">
                     <div class="card-header">
@@ -291,12 +291,12 @@ async function loadRegistrations() {
                                 <h3 style="margin: 0;">${projectData.project_title}</h3>
                                 <p class="text-sm text-gray-600 mt-1">${projectData.total_registrations} registration${projectData.total_registrations !== 1 ? 's' : ''}</p>
                             </div>
-                            ${isCompleted ? 
-                                '<span class="badge badge-success">Completed</span>' :
-                                canComplete ?
-                                `<button class="btn btn-primary btn-sm" onclick="completeProject(${projectData.project_id})">Complete Project</button>` :
-                                ''
-                            }
+                            ${isCompleted ?
+                    '<span class="badge badge-success">Completed</span>' :
+                    canComplete ?
+                        `<button class="btn btn-primary btn-sm" onclick="completeProject(${projectData.project_id})">Complete Project</button>` :
+                        ''
+                }
                         </div>
                     </div>
                     <div class="card-content">
@@ -320,7 +320,7 @@ async function loadRegistrations() {
                 </div>
             `;
         }
-        
+
         container.innerHTML = html;
     } catch (error) {
         console.error(error);
@@ -343,24 +343,24 @@ async function loadRegistrations() {
 
 async function loadProjectRegistrations(projectId) {
     currentRegistrationsProjectId = projectId;
-    
+
     // Switch to registrations tab first
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelector('.nav-item[data-tab="registrations"]').classList.add('active');
     document.getElementById('registrations-tab').classList.add('active');
-    
+
     // Load all registrations if not already loaded
     const registrationsTab = document.getElementById('registrations-tab');
-    const needsLoad = !registrationsTab || 
-                     registrationsTab.innerHTML.trim() === '' || 
-                     registrationsTab.innerHTML.includes('Content will be dynamically loaded') ||
-                     !document.getElementById(`project-registrations-${projectId}`);
-    
+    const needsLoad = !registrationsTab ||
+        registrationsTab.innerHTML.trim() === '' ||
+        registrationsTab.innerHTML.includes('Content will be dynamically loaded') ||
+        !document.getElementById(`project-registrations-${projectId}`);
+
     if (needsLoad) {
         await loadRegistrations();
     }
-    
+
     // Function to scroll and highlight
     const scrollToProject = () => {
         const projectCard = document.getElementById(`project-registrations-${projectId}`);
@@ -370,14 +370,14 @@ async function loadProjectRegistrations(projectId) {
                 card.style.border = '';
                 card.style.boxShadow = '';
             });
-            
+
             // Highlight the target project card
             projectCard.style.border = '2px solid var(--secondary-blue)';
             projectCard.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            
+
             // Scroll to the project card
             projectCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            
+
             // Remove highlight after 3 seconds
             setTimeout(() => {
                 projectCard.style.border = '';
@@ -385,7 +385,7 @@ async function loadProjectRegistrations(projectId) {
             }, 3000);
         }
     };
-    
+
     // Wait for DOM to update if we just loaded
     if (needsLoad) {
         setTimeout(scrollToProject, 100);
@@ -407,12 +407,12 @@ async function updateRegistrationStatus(registrationId, status, projectId = null
         if (!response.ok) {
             throw new Error(result.error || `Unable to ${actionLabel} registration.`);
         }
-        
+
         // Check if project was auto-completed
         if (result.project_auto_completed) {
-            alert(result.message || 'Project has been automatically marked as completed since all participants are finalized.');
+            await Modal.success(result.message || 'Project has been automatically marked as completed since all participants are finalized.');
         }
-        
+
         // Reload all registrations if we're on the registrations tab
         const registrationsTab = document.getElementById('registrations-tab');
         if (registrationsTab && registrationsTab.classList.contains('active')) {
@@ -423,15 +423,20 @@ async function updateRegistrationStatus(registrationId, status, projectId = null
         loadProjects();
     } catch (error) {
         console.error(error);
-        alert(error.message || 'Unable to update registration status.');
+        await Modal.error(error.message || 'Unable to update registration status.');
     }
 }
 
 async function confirmCompletion(registrationId, projectId = null) {
-    if (!confirm('Confirm that this participant has completed the project? This will create a volunteer record for admin review.')) {
+    const confirmed = await Modal.confirm(
+        'Confirm that this participant has completed the project? This will create a volunteer record for admin review.',
+        { title: 'Confirm Completion', confirmText: 'Confirm', cancelText: 'Cancel' }
+    );
+
+    if (!confirmed) {
         return;
     }
-    
+
     try {
         const response = await fetch(`/api/v1/registrations/${registrationId}`, {
             method: 'PATCH',
@@ -442,14 +447,14 @@ async function confirmCompletion(registrationId, projectId = null) {
         if (!response.ok) {
             throw new Error(result.error || 'Unable to confirm completion.');
         }
-        
+
         // Check if project was auto-completed
         if (result.project_auto_completed) {
-            alert('Participant completion confirmed! A volunteer record has been created. ' + (result.message || 'Project has been automatically marked as completed since all participants are finalized.'));
+            await Modal.success('Participant completion confirmed! A volunteer record has been created. ' + (result.message || 'Project has been automatically marked as completed since all participants are finalized.'));
         } else {
-            alert('Participant completion confirmed! A volunteer record has been created and sent to admin for review.');
+            await Modal.success('Participant completion confirmed! A volunteer record has been created and sent to admin for review.');
         }
-        
+
         // Reload all registrations if we're on the registrations tab
         const registrationsTab = document.getElementById('registrations-tab');
         if (registrationsTab && registrationsTab.classList.contains('active')) {
@@ -460,15 +465,20 @@ async function confirmCompletion(registrationId, projectId = null) {
         loadProjects();
     } catch (error) {
         console.error(error);
-        alert(error.message || 'Unable to confirm completion.');
+        await Modal.error(error.message || 'Unable to confirm completion.');
     }
 }
 
 async function completeProject(projectId) {
-    if (!confirm('Mark this project as completed? Only participants who have been confirmed as completed will receive volunteer records. All other participants will be marked as not completed.')) {
+    const confirmed = await Modal.confirm(
+        'Mark this project as completed? Only participants who have been confirmed as completed will receive volunteer records. All other participants will be marked as not completed.',
+        { title: 'Complete Project', type: 'warning', confirmText: 'Complete Project', cancelText: 'Cancel' }
+    );
+
+    if (!confirmed) {
         return;
     }
-    
+
     try {
         const response = await fetch(`/api/v1/projects/${projectId}`, {
             method: 'PATCH',
@@ -479,22 +489,27 @@ async function completeProject(projectId) {
         if (!response.ok) {
             throw new Error(result.error || 'Unable to complete project.');
         }
-        alert(result.message || 'Project marked as completed successfully.');
+        await Modal.success(result.message || 'Project marked as completed successfully.');
         // Always reload registrations to show updated status
         await loadRegistrations();
         // Also reload projects list
         loadProjects();
     } catch (error) {
         console.error(error);
-        alert(error.message || 'Unable to complete project.');
+        await Modal.error(error.message || 'Unable to complete project.');
     }
 }
 
 async function markAsNotCompleted(registrationId, projectId = null) {
-    if (!confirm('Mark this participant as not completed? They will not receive volunteer records for this project.')) {
+    const confirmed = await Modal.confirm(
+        'Mark this participant as not completed? They will not receive volunteer records for this project.',
+        { title: 'Mark as Not Completed', type: 'warning', confirmText: 'Mark Not Completed', cancelText: 'Cancel' }
+    );
+
+    if (!confirmed) {
         return;
     }
-    
+
     try {
         const response = await fetch(`/api/v1/registrations/${registrationId}`, {
             method: 'PATCH',
@@ -505,14 +520,14 @@ async function markAsNotCompleted(registrationId, projectId = null) {
         if (!response.ok) {
             throw new Error(result.error || 'Unable to mark as not completed.');
         }
-        
+
         // Check if project was auto-completed
         if (result.project_auto_completed) {
-            alert('Participant marked as not completed. ' + (result.message || 'Project has been automatically marked as completed since all participants are finalized.'));
+            await Modal.success('Participant marked as not completed. ' + (result.message || 'Project has been automatically marked as completed since all participants are finalized.'));
         } else {
-            alert('Participant marked as not completed.');
+            await Modal.success('Participant marked as not completed.');
         }
-        
+
         // Reload all registrations if we're on the registrations tab
         const registrationsTab = document.getElementById('registrations-tab');
         if (registrationsTab && registrationsTab.classList.contains('active')) {
@@ -523,7 +538,7 @@ async function markAsNotCompleted(registrationId, projectId = null) {
         loadProjects();
     } catch (error) {
         console.error(error);
-        alert(error.message || 'Unable to mark as not completed.');
+        await Modal.error(error.message || 'Unable to mark as not completed.');
     }
 }
 
@@ -554,7 +569,7 @@ function initDisplayNameEditor() {
         })
         .catch(err => console.error('Failed to fetch user info:', err));
 
-    editBtn.addEventListener('click', function() {
+    editBtn.addEventListener('click', function () {
         originalDisplayName = input.value;
         input.disabled = false;
         input.style.backgroundColor = 'white';
@@ -566,7 +581,7 @@ function initDisplayNameEditor() {
         messageEl.style.display = 'none';
     });
 
-    cancelBtn.addEventListener('click', function() {
+    cancelBtn.addEventListener('click', function () {
         input.value = originalDisplayName;
         input.disabled = true;
         input.style.backgroundColor = 'var(--gray-100)';
@@ -577,9 +592,9 @@ function initDisplayNameEditor() {
         messageEl.style.display = 'none';
     });
 
-    saveBtn.addEventListener('click', async function() {
+    saveBtn.addEventListener('click', async function () {
         const newDisplayName = input.value.trim();
-        
+
         if (!currentUserId) {
             showMessage('Error: User ID not found. Please refresh the page.', 'error');
             return;
@@ -611,9 +626,9 @@ function initDisplayNameEditor() {
                 cancelBtn.style.display = 'none';
                 saveBtn.disabled = false;
                 saveBtn.textContent = 'Save';
-                
+
                 showMessage('Organization name updated successfully!', 'success');
-                
+
                 // Update sidebar display
                 const sidebarUsername = document.getElementById('sidebar-username');
                 if (sidebarUsername) {
@@ -636,11 +651,11 @@ function initDisplayNameEditor() {
     function showMessage(text, type) {
         const messageEl = document.getElementById('display-name-message');
         if (!messageEl) return;
-        
+
         messageEl.textContent = text;
         messageEl.style.display = 'block';
         messageEl.style.color = type === 'success' ? 'var(--secondary-blue)' : 'var(--accent-orange)';
-        
+
         if (type === 'success') {
             setTimeout(() => {
                 messageEl.style.display = 'none';
@@ -649,7 +664,7 @@ function initDisplayNameEditor() {
     }
 
     // Allow Enter key to save
-    input.addEventListener('keypress', function(e) {
+    input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter' && !input.disabled) {
             saveBtn.click();
         }
@@ -657,7 +672,7 @@ function initDisplayNameEditor() {
 }
 
 // Handle project creation form
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize display name editor
     initDisplayNameEditor();
 
@@ -670,14 +685,14 @@ document.addEventListener('DOMContentLoaded', function() {
             renderRecentProjects(data.recent_projects);
         }
     });
-    
+
     // Draft management functions
     const DRAFT_STORAGE_KEY = 'project_draft';
-    
+
     function saveDraft() {
         const form = document.querySelector('form[action="/api/create-project"]');
         if (!form) return;
-        
+
         const draftData = {
             title: document.getElementById('project-title')?.value || '',
             category: document.getElementById('project-category')?.value || '',
@@ -691,15 +706,15 @@ document.addEventListener('DOMContentLoaded', function() {
             requirements: document.getElementById('project-requirements')?.value || '',
             saved_at: new Date().toISOString()
         };
-        
+
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
-        alert('Draft saved successfully!');
+        Modal.success('Draft saved successfully!');
     }
-    
+
     function loadDraft() {
         const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (!draftJson) return null;
-        
+
         try {
             return JSON.parse(draftJson);
         } catch (e) {
@@ -707,14 +722,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
-    
+
     function clearDraft() {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
-    
+
     function restoreDraft(draftData) {
         if (!draftData) return;
-        
+
         const titleEl = document.getElementById('project-title');
         const categoryEl = document.getElementById('project-category');
         const categoryOtherEl = document.getElementById('project-category-other');
@@ -725,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const durationEl = document.getElementById('project-duration');
         const pointsEl = document.getElementById('project-points');
         const requirementsEl = document.getElementById('project-requirements');
-        
+
         if (titleEl) titleEl.value = draftData.title || '';
         if (descriptionEl) descriptionEl.value = draftData.description || '';
         if (dateEl) dateEl.value = draftData.date || '';
@@ -734,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (durationEl) durationEl.value = draftData.duration || '';
         if (pointsEl) pointsEl.value = draftData.points || '';
         if (requirementsEl) requirementsEl.value = draftData.requirements || '';
-        
+
         // Handle category
         if (categoryEl) {
             if (draftData.category === 'other') {
@@ -753,50 +768,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
-    function checkAndPromptDraft() {
+
+    async function checkAndPromptDraft() {
         const draftData = loadDraft();
         if (!draftData) return;
-        
+
         // Check if draft has meaningful content
         const hasContent = draftData.title || draftData.description || draftData.location;
         if (!hasContent) {
             clearDraft();
             return;
         }
-        
+
         // Show prompt
         const savedDate = new Date(draftData.saved_at);
         const savedDateStr = savedDate.toLocaleString();
-        
-        if (confirm(`You have a saved draft from ${savedDateStr}.\n\nWould you like to restore it?`)) {
+
+        const restore = await Modal.confirm(
+            `You have a saved draft from ${savedDateStr}.\n\nWould you like to restore it?`,
+            { title: 'Restore Draft', confirmText: 'Restore', cancelText: 'Discard' }
+        );
+
+        if (restore) {
             restoreDraft(draftData);
         } else {
-            // Ask if user wants to discard the draft
-            if (confirm('Do you want to discard the saved draft?')) {
-                clearDraft();
-            }
+            clearDraft();
         }
     }
-    
+
     // Handle category "Other" option
     const categorySelect = document.getElementById('project-category');
     const categoryOtherInput = document.getElementById('project-category-other');
-    
+
     if (categorySelect && categoryOtherInput) {
         // Initialize color based on current value
         if (categorySelect.value && categorySelect.value !== '') {
             categorySelect.style.color = 'var(--gray-700)';
         }
-        
-        categorySelect.addEventListener('change', function() {
+
+        categorySelect.addEventListener('change', function () {
             // Change color to normal when a category is selected, keep light color for hint
             if (this.value && this.value !== '') {
                 this.style.color = 'var(--gray-700)';
             } else {
                 this.style.color = 'var(--gray-400)';
             }
-            
+
             if (this.value === 'other') {
                 categoryOtherInput.style.display = 'block';
                 categoryOtherInput.required = true;
@@ -807,31 +824,31 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Handle Save Draft button
     const saveDraftBtn = document.getElementById('save-draft-btn');
     if (saveDraftBtn) {
-        saveDraftBtn.addEventListener('click', function() {
+        saveDraftBtn.addEventListener('click', function () {
             saveDraft();
         });
     }
-    
+
     // Handle project creation form
     const createForm = document.querySelector('form[action="/api/create-project"]');
     if (createForm) {
-        createForm.addEventListener('submit', async function(e) {
+        createForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const formData = new FormData(this);
-            
+
             // If "other" is selected, use the custom input value
             const categorySelect = document.getElementById('project-category');
             const categoryOtherInput = document.getElementById('project-category-other');
-            
+
             if (categorySelect && categorySelect.value === 'other' && categoryOtherInput) {
                 const customCategory = categoryOtherInput.value.trim();
                 if (!customCategory) {
-                    alert('Please specify the category when selecting "Other"');
+                    await Modal.warning('Please specify the category when selecting "Other"');
                     return;
                 }
                 formData.set('category', customCategory);
@@ -839,18 +856,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 formData.delete('category_other');
             }
-            
+
             try {
-            const response = await fetch('/api/v1/projects', {
-                method: 'POST',
-                body: formData
-            });
-                
+                const response = await fetch('/api/v1/projects', {
+                    method: 'POST',
+                    body: formData
+                });
+
                 const result = await response.json();
                 if (response.ok || response.status === 201) {
                     // Clear draft on successful submission
                     clearDraft();
-                    alert('Project submitted successfully! It will be reviewed by an administrator.');
+                    await Modal.success('Project submitted successfully! It will be reviewed by an administrator.');
                     this.reset();
                     // Reset category other input visibility
                     if (categoryOtherInput) {
@@ -859,18 +876,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     loadProjects();
                 } else {
-                    alert('Error: ' + (result.error || 'Failed to create project'));
+                    await Modal.error('Error: ' + (result.error || 'Failed to create project'));
                 }
             } catch (error) {
                 console.error(error);
-                alert('Error creating project. Please try again.');
+                await Modal.error('Error creating project. Please try again.');
             }
         });
     }
-    
+
     // Check for draft when switching to publish tab
     document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function () {
             const tabName = this.getAttribute('data-tab');
             if (tabName === 'publish') {
                 // Small delay to ensure form is visible
@@ -880,7 +897,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     // Check for draft on initial page load if publish tab is active
     const publishTab = document.getElementById('publish-tab');
     if (publishTab && publishTab.classList.contains('active')) {
@@ -889,4 +906,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     }
 });
-

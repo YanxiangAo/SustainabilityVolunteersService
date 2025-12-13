@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime
 
-from models import db, Project, Registration, VolunteerRecord
+from models import db, Project, Registration, VolunteerRecord, SystemSettings, Notification
 
 bp = Blueprint('api_registrations', __name__)
 
@@ -42,13 +42,19 @@ def _check_and_auto_complete_project(project):
             ).first()
             
             if not existing_record:
+                # Check auto-approve setting for short records
+                auto_approve = SystemSettings.get_setting('auto_approve_under_hours', 'false')
+                record_status = 'pending'
+                if auto_approve.lower() == 'true' and project.duration <= 4:
+                    record_status = 'approved'
+                
                 # Create volunteer record for confirmed participants
                 volunteer_record = VolunteerRecord(
                     user_id=registration.user_id,
                     project_id=project.id,
                     hours=project.duration,
                     points=project.points,
-                    status='pending',  # Wait for admin approval
+                    status=record_status,
                     completed_at=datetime.utcnow()
                 )
                 db.session.add(volunteer_record)
@@ -108,6 +114,15 @@ def api_project_registrations_create(project_id):
     
     project = Project.query.get_or_404(project_id)
     
+    # Validate project status - must be approved or in_progress
+    if project.status not in ('approved', 'in_progress'):
+        return jsonify({'error': 'Cannot register for this project. Project is not open for registration.'}), 400
+    
+    # Validate project date - must not be expired
+    today = datetime.utcnow().date()
+    if project.date < today:
+        return jsonify({'error': 'Cannot register for this project. Project date has passed.'}), 400
+    
     # Check if already registered
     existing = Registration.query.filter_by(
         user_id=current_user.id,
@@ -115,6 +130,17 @@ def api_project_registrations_create(project_id):
     ).first()
     
     if existing:
+        if existing.status == 'cancelled':
+            # Allow re-registration if previous was cancelled
+            existing.status = 'registered'
+            existing.created_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({
+                'id': existing.id,
+                'project_id': project_id,
+                'status': existing.status,
+                'message': 'Successfully re-registered for project'
+            }), 201
         return jsonify({'error': 'Already registered for this project'}), 400
     
     # Check if project is full
@@ -133,6 +159,12 @@ def api_project_registrations_create(project_id):
     )
     db.session.add(registration)
     db.session.commit()
+    
+    # Check if min_participants reached to trigger in_progress status
+    new_count = current_registrations + 1
+    if project.status == 'approved' and new_count >= (project.min_participants or 1):
+        project.status = 'in_progress'
+        db.session.commit()
     
     return jsonify({
         'id': registration.id,
@@ -193,7 +225,7 @@ def api_registration_update(registration_id):
     
     data = request.get_json(silent=True) or request.form or {}
     new_status = (data.get('status') or '').strip().lower()
-    allowed_statuses = {'registered', 'approved', 'cancelled', 'completed'}
+    allowed_statuses = {'registered', 'approved', 'rejected', 'cancelled', 'completed'}
     
     if new_status not in allowed_statuses:
         return jsonify({'error': 'Invalid status'}), 400
@@ -208,17 +240,42 @@ def api_registration_update(registration_id):
         ).first()
         
         if not existing_record:
+            # Check auto-approve setting for short records
+            auto_approve = SystemSettings.get_setting('auto_approve_under_hours', 'false')
+            record_status = 'pending'
+            if auto_approve.lower() == 'true' and project.duration <= 4:
+                record_status = 'approved'
+            
             volunteer_record = VolunteerRecord(
                 user_id=registration.user_id,
                 project_id=registration.project_id,
                 hours=project.duration,
                 points=project.points,
-                status='pending',
+                status=record_status,
                 completed_at=datetime.utcnow()
             )
             db.session.add(volunteer_record)
     
     db.session.commit()
+    
+    # Create notification for the participant when status changes
+    if new_status in ('approved', 'rejected', 'completed'):
+        notification_title = f'Registration {new_status.title()}'
+        if new_status == 'approved':
+            notification_message = f'Your registration for "{project.title}" has been approved!'
+        elif new_status == 'rejected':
+            notification_message = f'Your registration for "{project.title}" was not approved.'
+        else:  # completed
+            notification_message = f'Congratulations! You completed "{project.title}". Your volunteer hours are pending approval.'
+        
+        notification = Notification(
+            user_id=registration.user_id,
+            type='registration',
+            title=notification_title,
+            message=notification_message
+        )
+        db.session.add(notification)
+        db.session.commit()
     
     # Check if project should be auto-completed
     project_auto_completed = _check_and_auto_complete_project(project)

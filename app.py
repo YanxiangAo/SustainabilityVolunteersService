@@ -1,10 +1,13 @@
 # Flask Backend for Sustainable Volunteer Service Platform
 
+import os
+import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from config import Config
-from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment
+from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment, Notification
 from sqlalchemy import text
 from datetime import date, datetime
 
@@ -23,11 +26,12 @@ migrate = Migrate()
 
 @login_manager.user_loader
 def load_user(user_id):
-    """Load user by ID for Flask-Login"""
+    """Load user by ID for Flask-Login."""
     return User.query.get(int(user_id))
 
 
 def create_app() -> Flask:
+    """Create and configure the Flask application."""
     app = Flask(__name__)
     app.config.from_object(Config)
 
@@ -39,10 +43,34 @@ def create_app() -> Flask:
     # Register blueprints
     register_blueprints(app)
 
-    # Ensure logs show up even when debug is off
+    # Logging Configuration
+    # Ensure logs directory exists
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+
+    # Configure File Handler for Logging
+    file_handler = RotatingFileHandler(
+        app.config.get('LOG_FILE', 'logs/app.log'), 
+        maxBytes=102400, 
+        backupCount=10
+    )
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    # Set log level based on config
+    log_level = getattr(logging, app.config.get('LOG_LEVEL', 'INFO').upper(), logging.INFO)
+    file_handler.setLevel(log_level)
+    
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(log_level)
+    app.logger.info('Sustainability Volunteer Service startup')
+
+    # Ensure logs show up in console even when debug is off (e.g. for container logs)
     try:
-        import logging
-        app.logger.setLevel(logging.INFO)
+        if not app.debug:
+            stream_handler = logging.StreamHandler()
+            stream_handler.setLevel(log_level)
+            app.logger.addHandler(stream_handler)
     except Exception:
         pass
 
@@ -55,16 +83,17 @@ def create_app() -> Flask:
         except Exception:
             db.session.rollback()
 
-    # Initialize database and seed admin
+    # Initialize database and seed admin/data
     init_db(app)
 
     return app
 
 
 def init_db(app: Flask) -> None:
+    """Initialize the database schema and seed initial data."""
     with app.app_context():
         db.create_all()
-        
+
         # Initialize default system settings if they don't exist
         if not SystemSettings.query.filter_by(key='points_per_hour').first():
             SystemSettings.set_setting('points_per_hour', '20')
@@ -74,31 +103,60 @@ def init_db(app: Flask) -> None:
             SystemSettings.set_setting('project_requires_review', 'true')
 
         # Create admin user if it doesn't exist
-        admin = User.query.filter_by(username='admin').first()
+        # Security: Read credentials from environment variables to avoid hardcoded secrets
+        admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+        admin = User.query.filter_by(username=admin_username).first()
+        
         if not admin:
-            admin = User(username='admin', email='admin@example.com', user_type='admin')
-            admin.set_password('admin123')  # Change this password!
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+            
+            # SECURITY: If no password in env, generate a secure random one
+            if not admin_password:
+                import secrets
+                import string
+                alphabet = string.ascii_letters + string.digits + "!@#$%"
+                admin_password = ''.join(secrets.choice(alphabet) for _ in range(16))
+                app.logger.warning("=" * 60)
+                app.logger.warning("SECURITY WARNING: No ADMIN_PASSWORD set in environment!")
+                app.logger.warning(f"Generated temporary admin password: {admin_password}")
+                app.logger.warning("Please set ADMIN_PASSWORD environment variable in production!")
+                app.logger.warning("=" * 60)
+                print("=" * 60)
+                print(f"ADMIN PASSWORD (save this!): {admin_password}")
+                print("=" * 60)
+            
+            admin = User(username=admin_username, email=admin_email, user_type='admin')
+            admin.set_password(admin_password)
+            
             # Set is_active for new admin user
             if hasattr(admin, 'is_active'):
                 admin.is_active = True
+                
             db.session.add(admin)
             db.session.commit()
+            app.logger.info(f"Admin user '{admin_username}' created.")
 
-        seed_sample_data()
+        # Seed sample data only if explicitly requested or if database seems empty/dev mode
+        # For this demo, we check if any projects exist
+        if Project.query.count() == 0:
+            seed_sample_data(app)
 
-def seed_sample_data() -> None:
-    """Populate the database with initial sample data for demo usage."""
-    # Remove existing registrations, volunteer records, and user badges while keeping users, projects, and badge definitions.
-    print("Clearing existing registration and volunteer record data...")
+def seed_sample_data(app: Flask) -> None:
+    """Populate the database with initial sample data for demonstration purposes."""
+    
+    app.logger.info("Seeding sample data...")
+    
+    # Remove existing data to ensure clean state for demo
+    # Note: In production, one should be very careful with this!
     Registration.query.delete()
     VolunteerRecord.query.delete()
     UserBadge.query.delete()
     Comment.query.delete()
     db.session.commit()
-    print("Existing data cleared.")
     
-    # Helper utilities to fetch or create prerequisite users/projects (simple query-or-create approach).
-    def _get_or_create_user(username: str, email: str, user_type: str, password: str, display_name: str = None) -> User:
+    # Helper utilities to fetch or create users
+    def _get_or_create_user(username: str, email: str, user_type: str, display_name: str = None) -> User:
         user = User.query.filter_by(username=username).first()
         if not user:
             user = User(
@@ -107,7 +165,9 @@ def seed_sample_data() -> None:
                 user_type=user_type,
                 display_name=display_name or username
             )
-            user.set_password(password)
+            # Use environment variable or simple default for demo users
+            # Note: Demo users always have same simple password for ease of testing
+            user.set_password('Volunteer123!' if user_type == 'participant' else 'OrgPass123!')
             db.session.add(user)
             db.session.commit()
         return user
@@ -124,22 +184,18 @@ def seed_sample_data() -> None:
             db.session.add(project)
             db.session.commit()
         else:
-            # Ensure any pre-existing seed project is set to approved when required.
             if 'status' in kwargs and kwargs['status'] == 'approved':
                 project.status = 'approved'
                 db.session.add(project)
                 db.session.commit()
         return project
     
-    # Create a seed organization account.
-    greenearth = _get_or_create_user("greenearth", "contact@greenearth.org", "organization", "OrgPass123!", "Green Earth Environmental")
+    # Create sample users
+    greenearth = _get_or_create_user("greenearth", "contact@greenearth.org", "organization", "Green Earth Environmental")
+    emma = _get_or_create_user("emma", "emma@example.com", "participant", "Emma Wilson")
     
-    # Create a participant used across all workflow scenarios.
-    emma = _get_or_create_user("emma", "emma@example.com", "participant", "Volunteer123!", "Emma Wilson")
-    
-    # Create multiple projects that exercise every project lifecycle state (pending, approved, rejected, completed).
+    # Create sample projects covering various states
     projects = {
-        # Project state: pending — awaiting admin review.
         "pending_project": _get_or_create_project(
             "Community Garden Initiative", greenearth,
             date=date(2025, 12, 1), location="Community Center",
@@ -147,7 +203,6 @@ def seed_sample_data() -> None:
             max_participants=15, duration=6.0, points=100, rating=0.0,
             requirements="Interest in gardening and sustainable practices."
         ),
-        # Project state: approved — open for registrations (used for the "registered" sample).
         "registered_project": _get_or_create_project(
             "Beach Cleanup Action", greenearth,
             date=date(2025, 12, 5), location="Golden Coast",
@@ -155,7 +210,6 @@ def seed_sample_data() -> None:
             max_participants=25, duration=4.5, points=70, rating=4.6,
             requirements="Able to walk on sandy terrain and handle cleanup tools."
         ),
-        # Project state: approved — used for the "approved" registration sample.
         "approved_registration_project": _get_or_create_project(
             "River Conservation Program", greenearth,
             date=date(2025, 12, 8), location="Riverside Park",
@@ -163,7 +217,6 @@ def seed_sample_data() -> None:
             max_participants=20, duration=5.0, points=75, rating=4.7,
             requirements="Comfortable working near water and able to use testing equipment."
         ),
-        # Project state: approved — used for the "cancelled" registration sample.
         "cancelled_registration_project": _get_or_create_project(
             "Wildlife Habitat Restoration", greenearth,
             date=date(2025, 12, 12), location="Nature Reserve",
@@ -171,7 +224,6 @@ def seed_sample_data() -> None:
             max_participants=18, duration=4.0, points=65, rating=4.5,
             requirements="Physical fitness and respect for wildlife."
         ),
-        # Project state: rejected — demonstrates a project removed by admin.
         "rejected_project": _get_or_create_project(
             "Night Market Setup", greenearth,
             date=date(2025, 12, 10), location="Downtown Square",
@@ -179,7 +231,6 @@ def seed_sample_data() -> None:
             max_participants=20, duration=5.0, points=80, rating=0.0,
             requirements="Available in evenings and able to lift moderate weights."
         ),
-        # Project state: completed — used for the "completed" registration sample.
         "completed_project": _get_or_create_project(
             "Urban Greening Planting Project", greenearth,
             date=date(2025, 11, 20), location="City Park",
@@ -187,7 +238,6 @@ def seed_sample_data() -> None:
             max_participants=30, duration=5.0, points=90, rating=4.9,
             requirements="Comfortable with outdoor manual work for several hours."
         ),
-        # Dedicated project for pre-approved volunteer record seeding.
         "approved_record_project": _get_or_create_project(
             "Community Book Donation", greenearth,
             date=date(2025, 11, 25), location="Civic Center",
@@ -197,82 +247,41 @@ def seed_sample_data() -> None:
         ),
     }
     
-    # Explicitly set project statuses (approved is the default unless overridden here).
-    # Ensure the projects tied to registration samples remain approved.
-    registered_project = projects["registered_project"]
-    registered_project.status = 'approved'
-    db.session.add(registered_project)
-    
-    approved_registration_project = projects["approved_registration_project"]
-    approved_registration_project.status = 'approved'
-    db.session.add(approved_registration_project)
-    
-    cancelled_registration_project = projects["cancelled_registration_project"]
-    cancelled_registration_project.status = 'approved'
-    db.session.add(cancelled_registration_project)
-    
-    approved_record_project = projects["approved_record_project"]
-    approved_record_project.status = 'approved'
-    db.session.add(approved_record_project)
-    
-    pending_project = projects["pending_project"]
-    pending_project.status = 'pending'
-    db.session.add(pending_project)
-    
-    rejected_project = projects["rejected_project"]
-    rejected_project.status = 'rejected'
-    db.session.add(rejected_project)
-    
-    completed_project = projects["completed_project"]
-    completed_project.status = 'completed'
-    db.session.add(completed_project)
+    # Set statuses explicitly
+    projects["registered_project"].status = 'approved'
+    projects["approved_registration_project"].status = 'approved'
+    projects["cancelled_registration_project"].status = 'approved'
+    projects["approved_record_project"].status = 'approved'
+    projects["pending_project"].status = 'pending'
+    projects["rejected_project"].status = 'rejected'
+    projects["completed_project"].status = 'completed'
     
     db.session.commit()
-
-    # Seed registrations: one participant registers for multiple projects to cover every Registration state.
-    # Registration states covered: registered, approved, cancelled, completed.
-    # Note: Only approved projects accept registrations, so each sample references an approved project.
+    
+    # Seed registrations
     registrations = [
-        # 1. registered — pending organization approval (participant is waiting for decision).
         (emma, projects["registered_project"], "registered"),
-        
-        # 2. approved — organization accepted the participant and awaits completion confirmation.
         (emma, projects["approved_registration_project"], "approved"),
-        
-        # 3. cancelled — rejected by organization or manually marked as cancelled.
         (emma, projects["cancelled_registration_project"], "cancelled"),
-        
-        # 4. completed — organization confirmed completion, which normally triggers a pending VolunteerRecord.
         (emma, projects["completed_project"], "completed"),
     ]
     
-    # Create registrations for each target state if they do not already exist.
     for user, proj, status in registrations:
-        # Skip creation when the same registration already exists.
         existing = Registration.query.filter_by(
-            user_id=user.id,
-            project_id=proj.id,
-            status=status
-        ).first()
+            user_id=user.id, project_id=proj.id, status=status).first()
         if not existing:
-            registration = Registration(
-                user_id=user.id, 
-                project_id=proj.id, 
-                status=status,
+            reg = Registration(
+                user_id=user.id, project_id=proj.id, status=status,
                 created_at=datetime.utcnow()
             )
-            db.session.add(registration)
+            db.session.add(reg)
     
     db.session.commit()
-
-    # Manually create pending volunteer records for completed registrations, because automatic creation only happens during state transitions.
-    completed_registrations = Registration.query.filter_by(status='completed').all()
-    pending_records_created = 0
-    for reg in completed_registrations:
-        existing = VolunteerRecord.query.filter_by(
-            user_id=reg.user_id,
-            project_id=reg.project_id
-        ).first()
+    
+    # Create records for completed projects
+    completed_regs = Registration.query.filter_by(status='completed').all()
+    for reg in completed_regs:
+        existing = VolunteerRecord.query.filter_by(user_id=reg.user_id, project_id=reg.project_id).first()
         if not existing:
             project = reg.project
             record = VolunteerRecord(
@@ -280,173 +289,66 @@ def seed_sample_data() -> None:
                 project_id=reg.project_id,
                 hours=project.duration,
                 points=project.points,
-                status='pending',  # Waiting for admin approval
+                status='pending',
                 completed_at=datetime.utcnow()
             )
             db.session.add(record)
-            pending_records_created += 1
+    
+    # Seed historical records
+    if not VolunteerRecord.query.filter_by(user_id=emma.id, project_id=projects["approved_record_project"].id).first():
+        record = VolunteerRecord(
+            user_id=emma.id,
+            project_id=projects["approved_record_project"].id,
+            hours=3.5,
+            points=55,
+            status='approved',
+            completed_at=datetime.utcnow()
+        )
+        db.session.add(record)
+    
     db.session.commit()
     
-    # Seed a few already-approved volunteer records to demonstrate the end-to-end flow.
-    # These represent historical projects that finished and passed admin review.
-    approved_records = [
-        # Approved record — shows up inside participant statistics and Hour Records.
-        (emma, projects["approved_record_project"], 3.5, 55, "approved"),
-    ]
-    
-    approved_count = 0
-    for user, proj, hours, points, status in approved_records:
-        # Skip when a record already exists for the user/project pair.
-        existing = VolunteerRecord.query.filter_by(
-            user_id=user.id,
-            project_id=proj.id
-        ).first()
-        if not existing:
-            record = VolunteerRecord(
-                user_id=user.id,
-                project_id=proj.id,
-                hours=hours,
-                points=points,
-                status=status,
-                completed_at=datetime.utcnow()
-            )
-            db.session.add(record)
-            approved_count += 1
-    db.session.commit()
-    
-    # Output a quick summary of how many registrations were generated.
-    total_registrations = Registration.query.filter_by(user_id=emma.id).count()
-    print(f"Created {total_registrations} registrations for participant emma:")
-    print(f"  - registered: {Registration.query.filter_by(user_id=emma.id, status='registered').count()}")
-    print(f"  - approved: {Registration.query.filter_by(user_id=emma.id, status='approved').count()}")
-    print(f"  - completed: {Registration.query.filter_by(user_id=emma.id, status='completed').count()}")
-    print(f"  - cancelled: {Registration.query.filter_by(user_id=emma.id, status='cancelled').count()}")
-    print(f"\nCreated {pending_records_created} pending volunteer records (from completed registrations).")
-    print(f"Created {approved_count} approved volunteer records.")
-    
-    # Print the distribution of project statuses for visibility.
-    print(f"\nProject status summary:")
-    print(f"  - pending: {Project.query.filter_by(organization_id=greenearth.id, status='pending').count()}")
-    print(f"  - approved: {Project.query.filter_by(organization_id=greenearth.id, status='approved').count()}")
-    print(f"  - rejected: {Project.query.filter_by(organization_id=greenearth.id, status='rejected').count()}")
-    print(f"  - completed: {Project.query.filter_by(organization_id=greenearth.id, status='completed').count()}")
-
-    # Seed badges
+    # Seed Badges
     badge_definitions = [
-        {
-            "code": "rising-star",
-            "name": "Rising Star",
-            "description": "Complete first volunteer service",
-            "accent_color": "var(--accent-yellow)",
-            "background_color": "#fef3c7",
-            "icon": "star"
-        },
-        {
-            "code": "eco-pioneer",
-            "name": "Eco Pioneer",
-            "description": "Complete 50 hours of environmental service",
-            "accent_color": "var(--primary-green)",
-            "background_color": "#dcfce7",
-            "icon": "leaf"
-        },
-        {
-            "code": "compassion",
-            "name": "Compassion Ambassador",
-            "description": "Volunteer for 6 consecutive months",
-            "accent_color": "var(--gray-500)",
-            "background_color": "#f3f4f6",
-            "icon": "heart"
-        },
-        {
-            "code": "public-welfare",
-            "name": "Public Welfare Expert",
-            "description": "Complete 100 hours of service",
-            "accent_color": "var(--gray-500)",
-            "background_color": "#f3f4f6",
-            "icon": "medal"
-        },
-        {
-            "code": "team-leader",
-            "name": "Team Leader",
-            "description": "Organize 10 volunteer activities",
-            "accent_color": "var(--gray-500)",
-            "background_color": "#f3f4f6",
-            "icon": "leader"
-        }
+        {"code": "rising-star", "name": "Rising Star", "description": "Complete first volunteer service", "accent_color": "var(--accent-yellow)", "background_color": "#fef3c7", "icon": "star"},
+        {"code": "eco-pioneer", "name": "Eco Pioneer", "description": "Complete 50 hours of environmental service", "accent_color": "var(--primary-green)", "background_color": "#dcfce7", "icon": "leaf"},
+        {"code": "compassion", "name": "Compassion Ambassador", "description": "Volunteer for 6 consecutive months", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "heart"},
+        {"code": "public-welfare", "name": "Public Welfare Expert", "description": "Complete 100 hours of service", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "medal"},
+        {"code": "team-leader", "name": "Team Leader", "description": "Organize 10 volunteer activities", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "leader"}
     ]
-
-    badges_by_code = {}
+    
+    badges_map = {}
     for definition in badge_definitions:
         badge = Badge.query.filter_by(code=definition["code"]).first()
         if not badge:
-            badge = Badge(
-                code=definition["code"],
-                name=definition["name"],
-                description=definition["description"],
-                accent_color=definition["accent_color"],
-                background_color=definition["background_color"],
-                icon=definition["icon"]
-            )
+            badge = Badge(**definition)
             db.session.add(badge)
-            db.session.commit()
-        else:
-            badge.name = definition["name"]
-            badge.description = definition["description"]
-            badge.accent_color = definition["accent_color"]
-            badge.background_color = definition["background_color"]
-            badge.icon = definition["icon"]
-            db.session.add(badge)
-            db.session.commit()
-        badges_by_code[badge.code] = badge
-
-    # Assign badges to sample participant
-    if not emma:
-        return  # Skip badge assignments if user doesn't exist
+        badges_map[definition['code']] = badge
+    db.session.commit()
     
-    user_badge_assignments = [
-        ("rising-star", True),
-        ("eco-pioneer", True),
-        ("compassion", False),
-        ("public-welfare", False),
-        ("team-leader", False),
-    ]
-
-    # Query all existing user_badges for this user in one go to avoid queries in loop
-    existing_user_badges = {
-        (ub.user_id, ub.badge_id): ub 
-        for ub in UserBadge.query.filter_by(user_id=emma.id).all()
-    }
-
-    # Now process all assignments without any queries
-    for badge_code, earned in user_badge_assignments:
-        badge = badges_by_code.get(badge_code)
-        if not badge:
-            continue
-        
-        key = (emma.id, badge.id)
-        user_badge = existing_user_badges.get(key)
-        
-        if not user_badge:
-            user_badge = UserBadge(
-                user_id=emma.id,
-                badge_id=badge.id,
-                earned=earned,
-                earned_at=datetime.utcnow() if earned else None,
-                progress=100.0 if earned else 0.0
-            )
-            db.session.add(user_badge)
-        else:
-            user_badge.earned = earned
-            user_badge.earned_at = datetime.utcnow() if earned else None
-            user_badge.progress = 100.0 if earned else user_badge.progress
-            db.session.add(user_badge)
+    # Assign badges
+    if emma:
+        earned_badges = ["rising-star", "eco-pioneer"]
+        for code, badge_obj in badges_map.items():
+            if not badge_obj.id: continue # Should be committed
+            
+            earned = code in earned_badges
+            ub = UserBadge.query.filter_by(user_id=emma.id, badge_id=badge_obj.id).first()
+            if not ub:
+                ub = UserBadge(
+                    user_id=emma.id,
+                    badge_id=badge_obj.id,
+                    earned=earned,
+                    earned_at=datetime.utcnow() if earned else None,
+                    progress=100.0 if earned else 0.0
+                )
+                db.session.add(ub)
     
     db.session.commit()
+    app.logger.info("Sample data seeded successfully.")
 
-
-# Expose the app instance for Flask CLI
+# Expose app for CLI
 app = create_app()
-
 
 if __name__ == '__main__':
     app.run(debug=True)

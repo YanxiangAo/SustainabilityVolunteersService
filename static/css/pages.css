@@ -1,0 +1,783 @@
+/**
+ * Pages CSS - Page-Specific Styles and Themes
+ * ============================================================
+ * Contains: Auth pages, Project cards, Ratings, Role themes, Background patterns
+ * Dependencies: base.css, components.css, layout.css
+ * ============================================================
+ */
+
+/* ============================================================
+ * Section Backgrounds (for dark mode compatibility)
+ * ============================================================ */
+
+.section-white {
+    background-color: var(--white);
+}
+
+.section-gray {
+    background-color: var(--gray-50);
+}
+
+/* ============================================================
+ * Utility Classes for Inline Style Replacement
+ * These replace common inline styles for dark mode support
+ * ============================================================ */
+
+/* Icon/Avatar Containers */
+.icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.icon-container-sm {
+    width: 2rem;
+    height: 2rem;
+}
+
+.icon-container-md {
+    width: 3rem;
+    height: 3rem;
+}
+
+.icon-container-lg {
+    width: 4rem;
+    height: 4rem;
+}
+
+/* Icon Container Color Variants */
+.icon-container-green {
+    background-color: #dcfce7;
+    color: var(--primary-green);
+}
+
+.icon-container-blue {
+    background-color: #dbeafe;
+    color: var(--secondary-blue);
+}
+
+.icon-container-purple {
+    background-color: #f3e8ff;
+    color: var(--accent-purple);
+}
+
+.icon-container-pink {
+    background-color: #fce7f3;
+    color: #ec4899;
+}
+
+.icon-container-orange {
+    background-color: #ffedd5;
+    color: var(--accent-orange);
+}
+
+/* Text Color Utilities (with dark mode support) */
+.text-accent-green {
+    color: var(--primary-green);
+}
+
+.text-accent-blue {
+    color: var(--secondary-blue);
+}
+
+.text-accent-purple {
+    color: var(--accent-purple);
+}
+
+.text-accent-pink {
+    color: #ec4899;
+}
+
+.text-accent-orange {
+    color: var(--accent-orange);
+}
+
+/* Background Utilities */
+.bg-muted {
+    background-color: var(--gray-50);
+}
+
+.bg-subtle {
+    background-color: var(--gray-100);
+}
+
+.bg-card {
+    background-color: var(--white);
+}
+
+/* Status Indicator Dots */
+.status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-dot-green {
+    background-color: var(--primary-green);
+}
+
+.status-dot-blue {
+    background-color: var(--secondary-blue);
+}
+
+.status-dot-orange {
+    background-color: var(--accent-orange);
+}
+
+.status-dot-red {
+    background-color: #ef4444;
+}
+
+/* Stat Number Sizes */
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.stat-number-lg {
+    font-size: 2.5rem;
+}
+
+/* Hero Button Variants */
+.btn-hero-primary {
+    background-color: white;
+    color: var(--primary-green);
+}
+
+.btn-hero-outline {
+    background-color: transparent;
+    border: 1px solid white;
+    color: white;
+}
+
+.btn-hero-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Danger/Warning Styling */
+.card-danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+.card-danger-header {
+    background-color: #fef2f2;
+}
+
+.btn-danger-solid {
+    background-color: #dc2626;
+    color: white;
+    border: none;
+}
+
+/* Form Display Fields (readonly-like) */
+.form-display {
+    padding: 0.5rem 0.75rem;
+    background-color: var(--gray-50);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+}
+
+.form-display-label {
+    color: var(--gray-500);
+}
+
+.form-display-value {
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+/* Log/Code Display Area */
+.log-display {
+    background-color: var(--gray-50);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    font-family: monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-height: 500px;
+    overflow: auto;
+}
+
+/* Settings Form Block */
+.settings-block {
+    background-color: var(--gray-50);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+
+/* Progress Bar Base */
+.progress-bar {
+    width: 100%;
+    height: 0.5rem;
+    background-color: var(--gray-200);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.progress-bar-fill-green {
+    background-color: var(--primary-green);
+}
+
+.progress-bar-fill-blue {
+    background-color: var(--secondary-blue);
+}
+
+/* Notification Badge */
+.notification-badge {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #dc2626;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    min-width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-badge.visible {
+    display: flex;
+}
+
+/* Back Button Style */
+.btn-back {
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0.625rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    color: var(--gray-700);
+    text-decoration: none;
+}
+
+.btn-back:hover {
+    color: var(--gray-900);
+}
+
+/* ============================================================
+ * Auth Pages (Login/Register)
+ * ============================================================ */
+
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #e0f4e8 0%, #f0f9ff 50%, #e8f5e9 100%);
+    padding: 2rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-card .card {
+    border: 1px solid var(--gray-200);
+}
+
+/* ============================================================
+ * Project Cards
+ * ============================================================ */
+
+.project-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ============================================================
+ * Sustainability Rating Stars
+ * ============================================================ */
+
+.sustainability-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stars {
+    display: flex;
+    gap: 0.125rem;
+}
+
+.star {
+    width: 1rem;
+    height: 1rem;
+}
+
+.star.filled {
+    fill: currentColor;
+}
+
+.rating-low {
+    color: var(--gray-400);
+}
+
+.rating-medium {
+    color: var(--accent-yellow);
+}
+
+.rating-high {
+    color: var(--accent-orange);
+}
+
+.rating-excellent {
+    color: var(--primary-green);
+}
+
+/* Rating Badge Variants */
+.rating-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.rating-badge-low {
+    background-color: #f3f4f6;
+    color: var(--gray-600);
+}
+
+.rating-badge-medium {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.rating-badge-high {
+    background-color: #dcfce7;
+    color: var(--primary-green-dark);
+}
+
+/* Project Card Info List */
+.project-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.project-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ============================================================
+ * B-LEVEL REQUIREMENT: Role-Based Color Theming
+ * Different user roles have distinct accent colors:
+ * - Participant: Green (eco/volunteer focus)
+ * - Organization: Blue (professional/trust)
+ * - Admin: Purple (authority/management)
+ * ============================================================ */
+
+/* Participant role (green theme - default) */
+[data-role="participant"] {
+    --role-accent: var(--primary-green);
+    --role-accent-light: #dcfce7;
+    --role-accent-dark: #15803d;
+}
+
+/* Organization role (blue theme) */
+[data-role="organization"] {
+    --role-accent: var(--secondary-blue);
+    --role-accent-light: #dbeafe;
+    --role-accent-dark: #1d4ed8;
+}
+
+/* Admin role (purple theme) */
+[data-role="admin"] {
+    --role-accent: var(--accent-purple);
+    --role-accent-light: #f3e8ff;
+    --role-accent-dark: #7e22ce;
+}
+
+/* Apply role accent to navigation */
+[data-role="participant"] .nav-item.active,
+[data-role="organization"] .nav-item.active,
+[data-role="admin"] .nav-item.active {
+    background-color: var(--role-accent-light);
+    color: var(--role-accent);
+}
+
+/* Apply role accent to primary buttons */
+[data-role="participant"] .btn-primary {
+    background-color: var(--role-accent);
+}
+
+[data-role="organization"] .btn-primary {
+    background-color: var(--role-accent);
+}
+
+[data-role="admin"] .btn-primary {
+    background-color: var(--role-accent);
+}
+
+[data-role="participant"] .btn-primary:hover {
+    background-color: var(--role-accent-dark);
+}
+
+[data-role="organization"] .btn-primary:hover {
+    background-color: var(--role-accent-dark);
+}
+
+[data-role="admin"] .btn-primary:hover {
+    background-color: var(--role-accent-dark);
+}
+
+/* ============================================================
+ * A-LEVEL REQUIREMENT: Background Pattern Customization
+ * Users can choose from different background patterns
+ * ============================================================ */
+
+/* Dots pattern */
+[data-bg="dots"] body {
+    background-image: radial-gradient(circle, var(--gray-300) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Grid pattern */
+[data-bg="grid"] body {
+    background-image:
+        linear-gradient(var(--gray-200) 1px, transparent 1px),
+        linear-gradient(90deg, var(--gray-200) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Lines pattern */
+[data-bg="lines"] body {
+    background-image: repeating-linear-gradient(45deg,
+            var(--gray-100),
+            var(--gray-100) 5px,
+            transparent 5px,
+            transparent 25px);
+}
+
+/* ============================================================
+ * Gamification: Volunteer Journey Milestones
+ * ============================================================ */
+
+.milestone-journey {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 0;
+}
+
+.milestone-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    position: relative;
+}
+
+.milestone-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    border: 2px solid var(--gray-300);
+    background-color: var(--white);
+    color: var(--gray-400);
+    transition: all 0.3s;
+}
+
+.milestone-item.completed .milestone-icon {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+    color: var(--white);
+}
+
+.milestone-item.current .milestone-icon {
+    border-color: var(--primary-green);
+    color: var(--primary-green);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.milestone-label {
+    font-size: 0.625rem;
+    color: var(--gray-500);
+    margin-top: 0.25rem;
+    text-align: center;
+}
+
+.milestone-connector {
+    flex: 1;
+    height: 2px;
+    background-color: var(--gray-300);
+    min-width: 20px;
+}
+
+.milestone-connector.completed {
+    background-color: var(--primary-green);
+}
+
+/* ============================================================
+ * Empty States
+ * ============================================================ */
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--gray-500);
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+/* ============================================================
+ * Loading States
+ * ============================================================ */
+
+.loading-spinner {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary-green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    color: var(--gray-500);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+/* ============================================================
+ * Dashboard Specific Utilities
+ * ============================================================ */
+
+/* Sidebar Bottom Section */
+.sidebar-bottom {
+    position: absolute;
+    bottom: 0;
+    width: 16rem;
+    padding: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+/* Form Label */
+.form-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+}
+
+/* Form Input Readonly */
+.form-input-readonly {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    background-color: var(--gray-100);
+    transition: all 0.2s;
+}
+
+.form-input-readonly:disabled {
+    opacity: 1;
+    cursor: default;
+}
+
+/* Milestone Card Base */
+.milestone-card {
+    text-align: center;
+    min-width: 100px;
+    padding: 1rem;
+    background: var(--white);
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--gray-300);
+    opacity: 0.6;
+    transition: all 0.3s;
+}
+
+.milestone-card.completed {
+    border: 2px solid #22c55e;
+    opacity: 1;
+}
+
+.milestone-card.current {
+    border: 2px solid var(--primary-green);
+    opacity: 1;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+}
+
+.milestone-emoji {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.milestone-title {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.milestone-hours {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+/* Journey Card Gradient */
+.journey-card {
+    background: linear-gradient(135deg, #dcfce7 0%, #dbeafe 100%);
+}
+
+/* Notification Bell Button */
+.notification-bell {
+    position: relative;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--gray-600);
+}
+
+.notification-bell:hover {
+    color: var(--primary-green);
+}
+
+/* Flex Utilities */
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ===========================================
+ * Badge Content Classes
+ * =========================================== */
+.badge-content {
+    text-align: center;
+}
+
+.badge-name {
+    font-weight: 500;
+}
+
+.badge-description {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    opacity: 0.75;
+}
+
+.badge-locked-tag {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background-color: var(--gray-500);
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--border-radius);
+}
+
+/* ===========================================
+ * Button Full Width
+ * =========================================== */
+.btn-full {
+    width: 100%;
+}
+
+/* ===========================================
+ * Text Danger
+ * =========================================== */
+.text-danger {
+    color: #dc2626;
+}
+
+/* ===========================================
+ * Stat Number Utility Classes
+ * =========================================== */
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.stat-number-lg {
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.stat-number-green {
+    color: var(--primary-green);
+}
+
+.stat-number-blue {
+    color: var(--secondary-blue);
+}
+
+.stat-number-purple {
+    color: var(--accent-purple);
+}
+
+/* ===========================================
+ * Form Select
+ * =========================================== */
+.form-select {
+    width: 10rem;
+    padding: 0.5rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    background-color: var(--white);
+    color: inherit;
+}
