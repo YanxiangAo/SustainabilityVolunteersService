@@ -11,12 +11,13 @@
  * ============================================================ */
 
 .header {
-    background-color: var(--white);
-    border-bottom: 1px solid var(--gray-200);
+    background-color: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: var(--transition-colors);
 }
 
 .header-content {
@@ -49,11 +50,12 @@
     top: 0;
     bottom: 0;
     width: 16rem;
-    background-color: var(--white);
-    border-right: 1px solid var(--gray-200);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
     padding: 1.5rem;
     overflow-y: auto;
     z-index: 50;
+    transition: var(--transition-colors);
 }
 
 .sidebar-header {
@@ -76,22 +78,22 @@ nav {
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     text-decoration: none;
-    color: var(--gray-700);
+    color: var(--text-primary);
     font-size: 0.875rem;
     cursor: pointer;
     border: none;
     background: none;
     width: 100%;
     text-align: left;
-    transition: background-color 0.2s, color 0.2s;
+    transition: var(--transition-colors);
 }
 
 .nav-item:hover {
-    background-color: var(--gray-50);
+    background-color: var(--bg-hover);
 }
 
 .nav-item.active {
-    background-color: #dcfce7;
+    background-color: var(--bg-active);
     color: var(--primary-green);
 }
 
@@ -138,10 +140,11 @@ nav {
  * ============================================================ */
 
 .footer {
-    background-color: var(--gray-900);
-    color: var(--white);
+    background-color: var(--bg-footer);
+    color: var(--text-inverse);
     padding: 2rem 0;
     text-align: center;
+    transition: var(--transition-colors);
 }
 
 .footer-content {
@@ -153,7 +156,7 @@ nav {
 }
 
 .footer p {
-    color: var(--gray-400);
+    color: var(--text-muted);
     font-size: 0.875rem;
     margin: 0;
 }
@@ -166,7 +169,7 @@ nav {
 .custom-modal-overlay {
     position: fixed;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--bg-modal-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -201,13 +204,14 @@ nav {
 }
 
 .custom-modal {
-    background: var(--white);
+    background: var(--bg-card);
     border-radius: 12px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     width: 90%;
     max-width: 420px;
     overflow: hidden;
     animation: modalSlideIn 0.25s ease-out;
+    transition: var(--transition-colors);
 }
 
 .custom-modal-header {
@@ -215,32 +219,32 @@ nav {
     align-items: center;
     justify-content: space-between;
     padding: 16px 24px;
-    border-bottom: 1px solid var(--gray-200);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .custom-modal-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--gray-800);
+    color: var(--text-primary);
     margin: 0;
 }
 
 .custom-modal-close {
     background: none;
     border: none;
-    color: var(--gray-400);
+    color: var(--text-muted);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
+    transition: var(--transition-colors);
 }
 
 .custom-modal-close:hover {
-    background-color: var(--gray-100);
-    color: var(--gray-600);
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
 }
 
 .custom-modal-body {
@@ -248,7 +252,7 @@ nav {
 }
 
 .custom-modal-message {
-    color: var(--gray-600);
+    color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.6;
     margin: 0;
@@ -260,8 +264,8 @@ nav {
     gap: 12px;
     justify-content: flex-end;
     padding: 16px 24px;
-    background-color: var(--gray-50);
-    border-top: 1px solid var(--gray-200);
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
 }
 
 .custom-modal-btn {
@@ -284,13 +288,13 @@ nav {
 }
 
 .custom-modal-btn-secondary {
-    background: var(--white);
-    color: var(--gray-700);
-    border: 1px solid var(--gray-300);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
 }
 
 .custom-modal-btn-secondary:hover {
-    background: var(--gray-200);
+    background: var(--bg-hover);
 }
 
 /* ============================================================
