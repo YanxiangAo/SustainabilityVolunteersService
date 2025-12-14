@@ -162,6 +162,7 @@ function renderProjects(projects) {
                         <div class="flex gap-2">
                             <button class="btn btn-outline" onclick="window.location.href='/project/${project.id}'">View</button>
                             <button class="btn btn-outline" onclick="loadProjectRegistrations(${project.id})">Registrations</button>
+                            <button class="btn btn-outline" style="color: #ef4444; border-color: #ef4444;" onclick="deleteProject(${project.id})">Delete</button>
                         </div>
                     </div>
                 </div>
@@ -671,10 +672,92 @@ function initDisplayNameEditor() {
     });
 }
 
+// Delete project functionality
+async function deleteProject(projectId) {
+    const confirmed = await Modal.confirm(
+        'Are you sure you want to DELETE this project? This will permanently remove:\n• All comments and replies\n• All registrations\n• All volunteer records\n\nThis action cannot be undone.',
+        { type: 'warning', confirmText: 'Delete Project', cancelText: 'Cancel' }
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch(`/api/v1/projects/${projectId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            await Modal.success('Project deleted successfully.');
+            loadProjects();
+            // Reload dashboard data to update statistics
+            fetchDashboardData().then(data => {
+                if (!data.error && data.statistics) {
+                    updateStatistics(data.statistics);
+                }
+            });
+        } else {
+            const error = await response.json();
+            await Modal.error(error.error || 'Failed to delete project.');
+        }
+    } catch (error) {
+        console.error('Error deleting project:', error);
+        await Modal.error('Failed to delete project. Please try again.');
+    }
+}
+
+// Delete account functionality
+function initDeleteAccountButton() {
+    const deleteBtn = document.getElementById('delete-account-btn');
+    if (!deleteBtn) return;
+
+    deleteBtn.addEventListener('click', async function () {
+        const confirmText = 'DELETE';
+
+        const userInput = await Modal.prompt(
+            `WARNING: This action is irreversible!\n\nDeleting your account will permanently remove:\n• All your comments\n• All your notifications\n\n⚠️ IMPORTANT: You must delete all your projects first before deleting your account.\n\nType "${confirmText}" to confirm deletion:`,
+            { title: 'Delete Account', placeholder: 'Type DELETE to confirm' }
+        );
+
+        if (userInput !== confirmText) {
+            if (userInput !== null) {
+                await Modal.warning('Account deletion cancelled. Text did not match.');
+            }
+            return;
+        }
+
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = 'Deleting...';
+
+        try {
+            const response = await fetch('/api/v1/users/me', {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                await Modal.success('Your account has been deleted successfully.');
+                window.location.href = '/';
+            } else {
+                const error = await response.json();
+                await Modal.error(error.error || 'Failed to delete account.');
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Delete Account';
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error);
+            await Modal.error('Failed to delete account. Please try again.');
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = 'Delete Account';
+        }
+    });
+}
+
 // Handle project creation form
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize display name editor
     initDisplayNameEditor();
+    
+    // Initialize delete account button
+    initDeleteAccountButton();
 
     // Load dashboard data
     fetchDashboardData().then(data => {

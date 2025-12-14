@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Sustainable Volunteer Platform</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
 </head>
-<body style="background-color: var(--bg-primary);">
+
+<body class="bg-subtle">
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="flex items-center gap-2 mb-2">
-                <div style="width: 3rem; height: 3rem; background-color: #f3e8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-purple);">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <div class="icon-container icon-container-lg icon-container-purple">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" style="color: var(--accent-purple);">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                 </div>
                 <div>
@@ -25,64 +32,58 @@
 
         <nav class="sidebar-nav">
             <button class="nav-item active" data-tab="project-review">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <polyline points="9 15 11 17 15 13"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <polyline points="9 15 11 17 15 13" />
                 </svg>
                 <span>Project Review</span>
             </button>
             <button class="nav-item" data-tab="hours-review">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
                 </svg>
                 <span>Hours Review</span>
             </button>
             <button class="nav-item" data-tab="user-management">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
                 <span>User Management</span>
             </button>
             <button class="nav-item" data-tab="settings">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
                 </svg>
                 <span>System Settings</span>
             </button>
+            <button class="nav-item" data-tab="logs">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                <span>System Logs</span>
+            </button>
         </nav>
 
-        <div style="position: absolute; bottom: 0; width: 16rem; padding: 1rem; border-top: 1px solid var(--border-color);">
-            <button class="theme-toggle nav-item" aria-label="Toggle theme" title="Toggle theme" style="width: 100%; margin-bottom: 0.5rem;">
-                <span class="theme-icon-sun" style="display: none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </span>
-                <span class="theme-icon-moon" style="display: flex;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                </span>
-                <span>Theme</span>
-            </button>
+        <div class="sidebar-bottom">
             <a href="/logout" class="nav-item">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
                 <span>Logout</span>
             </a>
@@ -105,25 +106,36 @@
                             <h3 style="margin: 0;">Rural Teaching Support Activity</h3>
                             <div class="flex items-center gap-2 mt-2">
                                 <span class="badge badge-orange">Pending Review</span>
-                                <span class="text-sm text-gray-600">Hope Light Education Foundation · Submitted 2025-11-02</span>
+                                <span class="text-sm text-gray-600">Hope Light Education Foundation · Submitted
+                                    2025-11-02</span>
                             </div>
                         </div>
                         <div class="sustainability-rating rating-high">
                             <div class="stars">
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                    fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                    fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                    fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                    fill="currentColor" stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
-                                <svg class="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                <svg class="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                                 </svg>
                             </div>
                         </div>
@@ -145,24 +157,30 @@
                         </div>
                     </div>
 
-                    <div style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                    <div
+                        style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
                         <p class="text-sm text-gray-700 mb-2">Project Description:</p>
                         <p class="text-sm text-gray-600">
-                            This project aims to provide quality educational resources to rural children through teaching support activities, helping them broaden their horizons and cultivate learning interests. The activity will last one week, with volunteers teaching Chinese, Math, English and organizing extracurricular activities.
+                            This project aims to provide quality educational resources to rural children through
+                            teaching support activities, helping them broaden their horizons and cultivate learning
+                            interests. The activity will last one week, with volunteers teaching Chinese, Math, English
+                            and organizing extracurricular activities.
                         </p>
                     </div>
 
                     <div class="flex gap-3">
                         <button class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <polyline points="20 6 9 17 4 12"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <polyline points="20 6 9 17 4 12" />
                             </svg>
                             Approve
                         </button>
                         <button class="btn" style="background-color: #ef4444; color: white;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
                             </svg>
                             Reject
                         </button>
@@ -180,8 +198,9 @@
                     <p class="text-gray-600">Review and certify volunteer service hours</p>
                 </div>
                 <button class="btn btn-primary" id="batch-approve-btn" onclick="batchApproveRecords()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                        <polyline points="20 6 9 17 4 12"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+                        <polyline points="20 6 9 17 4 12" />
                     </svg>
                     Batch Approve (0)
                 </button>
@@ -216,15 +235,19 @@
                                 <td>
                                     <div class="flex gap-2">
                                         <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
-                                                <polyline points="20 6 9 17 4 12"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                style="margin-right: 0.25rem;">
+                                                <polyline points="20 6 9 17 4 12" />
                                             </svg>
                                             Approve
                                         </button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
-                                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                style="margin-right: 0.25rem;">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
                                             </svg>
                                             Reject
                                         </button>
@@ -242,15 +265,19 @@
                                 <td>
                                     <div class="flex gap-2">
                                         <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
-                                                <polyline points="20 6 9 17 4 12"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                style="margin-right: 0.25rem;">
+                                                <polyline points="20 6 9 17 4 12" />
                                             </svg>
                                             Approve
                                         </button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.25rem;">
-                                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                style="margin-right: 0.25rem;">
+                                                <line x1="18" y1="6" x2="6" y2="18" />
+                                                <line x1="6" y1="6" x2="18" y2="18" />
                                             </svg>
                                             Reject
                                         </button>
@@ -299,7 +326,9 @@
                             </tr>
                             <tr>
                                 <td>Green Earth Environmental</td>
-                                <td><span class="badge badge-secondary" style="background-color: #dbeafe; color: var(--secondary-blue);">Organization</span></td>
+                                <td><span class="badge badge-secondary"
+                                        style="background-color: #dbeafe; color: var(--secondary-blue);">Organization</span>
+                                </td>
                                 <td class="text-sm text-gray-600">green@example.com</td>
                                 <td><span class="badge badge-success">Active</span></td>
                                 <td class="text-sm text-gray-600">2024-12-01</td>
@@ -326,15 +355,18 @@
             <div class="card mb-6">
                 <div class="card-header">
                     <h3 style="margin: 0;">Points Rules</h3>
-                    <p class="text-sm text-gray-600 mt-1">Set the conversion ratio between volunteer hours and points</p>
+                    <p class="text-sm text-gray-600 mt-1">Set the conversion ratio between volunteer hours and points
+                    </p>
                 </div>
                 <div class="card-content">
                     <div class="flex items-center gap-4 mb-4">
                         <span class="text-sm">1 hour volunteer service = </span>
-                        <input type="number" id="points-per-hour-input" value="20" min="1" style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <input type="number" id="points-per-hour-input" value="20" min="1"
+                            style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
                         <span class="text-sm">points</span>
                     </div>
-                    <button id="save-points-settings-btn" class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                    <button id="save-points-settings-btn" class="btn"
+                        style="background-color: var(--accent-purple); color: white;">Save Settings</button>
                 </div>
             </div>
 
@@ -350,15 +382,49 @@
                     </div>
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-sm">Project publication requires admin review</span>
-                        <input type="checkbox" id="project-review-checkbox" checked style="width: 1.25rem; height: 1.25rem;">
+                        <input type="checkbox" id="project-review-checkbox" checked
+                            style="width: 1.25rem; height: 1.25rem;">
                     </div>
-                    <button id="save-review-settings-btn" class="btn" style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                    <button id="save-review-settings-btn" class="btn"
+                        style="background-color: var(--accent-purple); color: white;">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div class="tab-content" id="logs-tab">
+            <div class="mb-8">
+                <h2>System Logs</h2>
+                <p class="text-gray-600">View application logs and system activity</p>
+            </div>
+
+            <div class="card mb-6">
+                <div class="card-header">
+                    <div class="flex items-center justify-between">
+                        <h3 style="margin: 0;">Log Viewer</h3>
+                        <div class="flex items-center gap-4">
+                            <select id="log-level-filter"
+                                style="padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                                <option value="">All Levels</option>
+                                <option value="INFO">INFO</option>
+                                <option value="WARNING">WARNING</option>
+                                <option value="ERROR">ERROR</option>
+                            </select>
+                            <button class="btn btn-outline" onclick="loadLogs()">Refresh</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <pre id="logs-container"
+                        style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius); max-height: 500px; overflow: auto; font-family: monospace; font-size: 0.75rem; line-height: 1.5; white-space: pre-wrap;">Loading logs...</pre>
                 </div>
             </div>
         </div>
     </main>
 
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
+
 </html>

@@ -102,10 +102,12 @@ class Comment(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('comment.id'), nullable=True)  # For replies
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     project = relationship('Project', backref='comments', lazy=True)
     user = relationship('User', backref='comments', lazy=True)
+    parent = relationship('Comment', remote_side=[id], backref='replies', lazy=True)
 
 class SystemSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)

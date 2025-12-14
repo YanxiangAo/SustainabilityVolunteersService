@@ -209,20 +209,30 @@ def _delete_user(user, is_admin_action=False):
     user_id = user.id
     
     # For organizations, check if they have projects
+    # Users must delete all projects before deleting their account
     if user.user_type == 'organization':
         project_count = Project.query.filter_by(organization_id=user_id).count()
         if project_count > 0:
             return jsonify({
-                'error': f'Cannot delete account: User has {project_count} project(s). Please delete or transfer projects first.'
+                'error': f'Cannot delete account: You have {project_count} project(s). Please delete all projects first before deleting your account.'
             }), 400
     
     # Cascade delete all associated data
     try:
-        Comment.query.filter_by(user_id=user_id).delete()
-        Notification.query.filter_by(user_id=user_id).delete()
-        UserBadge.query.filter_by(user_id=user_id).delete()
-        VolunteerRecord.query.filter_by(user_id=user_id).delete()
-        Registration.query.filter_by(user_id=user_id).delete()
+        
+        # Delete comments and their replies (cascade delete for user's own comments)
+        # First, get all comment IDs from this user
+        user_comment_ids = [c.id for c in Comment.query.filter_by(user_id=user_id).all()]
+        # Delete all replies to these comments
+        if user_comment_ids:
+            Comment.query.filter(Comment.parent_id.in_(user_comment_ids)).delete(synchronize_session=False)
+        # Then delete the user's own comments
+        Comment.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        
+        Notification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        UserBadge.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        VolunteerRecord.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        Registration.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         
         # If user is deleting themselves, logout first
         if not is_admin_action:
