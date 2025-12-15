@@ -3,7 +3,7 @@
  * Replaces native alert(), confirm(), and prompt() with beautiful custom modals
  */
 
-const Modal = {
+let Modal = {
     /**
      * Show an alert modal
      * @param {string} message - The message to display

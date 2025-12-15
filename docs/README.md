@@ -1,208 +1,127 @@
 # Sustainable Volunteer Service Platform
 
-> **Repository URL**: [https://github.com/YOUR_USERNAME/SustainabilityVolunteersService](https://github.com/YOUR_USERNAME/SustainabilityVolunteersService)  
-> *(Replace with your actual repository URL)*
+> Connect volunteers with organizations to advance sustainable development.
 
-A web application connecting volunteers with organizations to practice sustainable development goals.
+- **Demo video**: [Milestone 2 (MP4)](video/Milestone%202_Demo.mp4)
+- **Diagrams / screenshots**: see [Screenshots & Diagrams](#screenshots--diagrams).
 
-## Author Declaration
+---
 
-**Project Author**: [Your Name Here]  
-**Student ID**: [Your Student ID]  
-**Course**: [Course Name]  
-**Date**: 2024-2025
+## Table of Contents
+1. [Author](#author)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Quick Start](#quick-start)
+5. [Security Notes](#security-notes)
+6. [Screenshots & Diagrams](#screenshots--diagrams)
+7. [Project Structure](#project-structure)
+8. [Key Pages](#key-pages)
+9. [Database Models](#database-models)
+10. [License](#license)
 
-*I declare that this project is my own original work. All external code, libraries, and resources used have been properly cited and attributed.*
+---
+
+## Author
+- **Project Author**: Yanxiang Ao, Haoming Xi, Honghao Liu  
+- **Course / Year**: 2024-2025  
+- This project is original work; external libraries are listed in `requirements.txt`.
 
 ---
 
 ## Features
+- Three roles: **Participant / Organization / Admin**
+- Project lifecycle: create → review → approve → register → complete
+- Sustainability rating (0–5 stars) with color-coded badges
+- Volunteer hours & points tracking; gamified badges/milestones
+- Dark/Light themes + role-based accent colors; customizable backgrounds
+- Responsive layout (desktop/tablet)
 
-- **Three User Types**: Participants, Organizations, and Administrators
-- **Project Management**: Create, browse, and register for volunteer projects
-- **Sustainability Rating**: 0-5 star rating system with color-coded badges
-- **Volunteer Hours Tracking**: Track and certify volunteer hours
-- **Points & Badges System**: Earn points and achievement badges
-- **Responsive Design**: Works on desktop and tablet devices
-- **Theme Customization**: Dark/Light mode with role-based color schemes (A-level)
-- **Background Patterns**: Customizable UI backgrounds (A-level)
+---
 
-## Technology Stack
-
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+## Tech Stack
+- **Frontend**: HTML5, CSS3, Vanilla JS
 - **Backend**: Flask (Python)
-- **Database**: SQLite
-- **Design**: Green eco-friendly theme with 8px border radius
+- **Database**: SQLite + SQLAlchemy
+- **Validation**: WTForms (auth) + Marshmallow (project APIs)
 
-## Installation
+---
 
-1. Install Python dependencies:
+## Quick Start
 ```bash
+# 1) Install deps
 pip install -r requirements.txt
-```
 
-2. Configure environment variables (for production):
-```bash
-export SECRET_KEY="your-secure-secret-key"
-export ADMIN_USERNAME="admin"
-export ADMIN_EMAIL="admin@example.com"
-export ADMIN_PASSWORD="your-secure-admin-password"
-```
+# 2) Set env (PowerShell example)
+$env:SECRET_KEY="dev-secret"
+$env:ADMIN_USERNAME="admin"
+$env:ADMIN_EMAIL="admin@example.com"
+$env:ADMIN_PASSWORD="admin123"
 
-3. Run the Flask application:
-```bash
-# Option A: using Flask CLI
+# 3) Run
 set FLASK_APP=app.py & set FLASK_ENV=development & flask run
-
-# Option B: run directly
+# or
 python app.py
+
+# 4) Open
+# http://localhost:5000
 ```
 
-4. Open your browser and navigate to:
+---
+
+## Security Notes
+- Production: set `SECRET_KEY`, `ADMIN_PASSWORD`, `DATABASE_URL`, `LOG_FILE`, `LOG_LEVEL`.
+- Admin password is never hardcoded; missing passwords are warned in logs (dev only).
+- Keep real secrets out of version control; use env vars.
+
+---
+
+## Screenshots & Diagrams
+- Database schema  
+  ![Database Schema](images/database_schema.png)
+- Data flow (activity)  
+  ![Data Flow Activity](images/data_flow.png)
+- Data flow (sequence)  
+  ![Data Flow Sequence](images/data_flow_sequence.png)
+- Demo video  
+  [Milestone 2 Demo](video/Milestone%202_Demo.mp4)
+
+---
+
+## Project Structure (key files)
 ```
-http://localhost:5000
-```
-
-## Security Configuration
-
-### Admin Credentials
-
-**For Development Only:**
-If `ADMIN_PASSWORD` environment variable is not set, a secure random password will be auto-generated and printed to the console. Save this password immediately!
-
-**For Production:**
-- Always set the `ADMIN_PASSWORD` environment variable
-- Never commit credentials to version control
-- Use a strong, unique password
-
-**⚠️ Important: The application no longer uses hardcoded default passwords for security.**
-
-## Project Structure
-
-```
-/
-├── app.py                      # App factory, registers blueprints, seeds admin
-├── config.py                   # Configuration (secret key, DB URI, etc.)
-├── models.py                   # SQLAlchemy models and db instance
-├── routes.py                   # All Flask routes (Blueprint 'main')
-├── forms.py                    # Minimal form parsers for login/register
-├── requirements.txt            # Python dependencies
-├── README.md                   # Project documentation
-├── instance/                   # Instance folder (Flask convention)
-│   └── volunteer.db           # SQLite database (auto-created)
-├── templates/                  # HTML templates
-│   ├── index.html             # Home page
-│   ├── login.html             # Login/Register page
-│   ├── participant_dashboard.html
-│   ├── organization_dashboard.html
-│   ├── admin_panel.html
-│   ├── project_detail.html
-│   └── volunteer_record.html
-└── static/                     # Static files
-    ├── css/
-    │   └── style.css          # Main stylesheet
-    └── js/
-        ├── home.js
-        ├── auth.js
-        └── participant.js
+app.py                # App factory, logging, seeds admin
+config.py             # Env-driven config (SECRET_KEY, DB URL, logging)
+models.py             # SQLAlchemy models
+schemas.py            # Marshmallow validation for projects
+forms.py              # WTForms for login/register
+api/                  # Flask blueprints (projects, users, registrations, etc.)
+templates/            # HTML pages (home, dashboards, admin, detail, records)
+static/css/           # base/components/layout/pages/dark-theme
+static/js/            # modal, theme, auth, dashboards
+docs/images/          # Diagrams & screenshots
+docs/video/           # Demo video
 ```
 
-## Pages
+---
 
-1. **Home Page** - Platform introduction, statistics, featured projects
-2. **Login/Register** - User authentication with role selection
-3. **Participant Dashboard** - Personal stats, badges, projects
-4. **Organization Dashboard** - Create and manage projects
-5. **Admin Panel** - Approve projects and volunteer hours
-6. **Project Detail** - Complete project information and registration
-7. **Volunteer Record** - Hour tracking with filtering and export
+## Key Pages
+1. **Home** (`index.html`) — intro, stats, featured projects (loaded by `home.js`)
+2. **Login/Register** (`login.html`) — combined auth card, WTForms validation
+3. **Participant Dashboard** (`participant_dashboard.html`) — stats, badges, registrations, records
+4. **Organization Dashboard** (`organization_dashboard.html`) — publish/manage projects, registrations
+5. **Admin Panel** (`admin_panel.html`) — project review, hour review, user management, logs
+6. **Project Detail** (`project_detail.html`) — full project info, registration, comments
+7. **Volunteer Record** (`volunteer_record.html`) — hour/points table with filters & export
 
-## Database Models
+---
 
-- **User**: Stores user accounts (participants, organizations, admins)
-- **Project**: Volunteer project information
-- **Registration**: Project registrations by participants
-- **VolunteerRecord**: Certified volunteer hours and points
+## Database Models (summary)
+- **User** — participants / organizations / admins (unique username & email)
+- **Project** — owned by organization; lifecycle statuses; min/max participants; rating/points
+- **Registration** — participant ↔ project; status `registered/approved/cancelled/rejected/completed`
+- **VolunteerRecord** — certified hours & points; status `pending/approved`
 
-### Database Schema Diagram
-
-![Database Schema](images/database_schema.png)
-
-This Entity-Relationship (ER) diagram illustrates the complete database structure with four main tables:
-
-- **User Table**: Central entity storing all user accounts with three types (participant, organization, admin). Each user has unique username and email, encrypted password, and timestamp of account creation.
-
-- **Project Table**: Created by organizations (`organization_id` foreign key), projects contain volunteer activity details including location, date, maximum participants, duration, points, and sustainability rating. Projects go through status lifecycle: `pending` → `approved` → `in_progress` → `completed`.
-
-- **Registration Table**: Junction table connecting participants to projects. Tracks registration status (`registered`, `completed`, `cancelled`) and creates the many-to-many relationship between users (participants) and projects.
-
-- **VolunteerRecord Table**: Records completed volunteer work with hours and points earned. Each record links a participant to a specific project and tracks approval status (`pending` → `approved`) by administrators.
-
-**Key Relationships:**
-- One organization can create many projects (1:N via `organization_id`)
-- One participant can register for many projects (1:N via `Registration.user_id`)
-- One project can have many registrations (1:N via `Registration.project_id`)
-- One participant can have many volunteer records (1:N via `VolunteerRecord.user_id`)
-- One project can generate many volunteer records (1:N via `VolunteerRecord.project_id`)
-
-### Data Population Flow
-
-**Activity Diagram:**
-![Data Flow Activity](images/data_flow.png)
-
-This activity diagram shows the step-by-step workflow of how data flows through the system:
-
-1. **Initial Setup**: An administrator creates the first admin user account in the system
-2. **Organization Registration**: Organizations register as users with `user_type='organization'`
-3. **Project Creation**: Organizations create volunteer projects, which start with `status='pending'`
-4. **Project Approval**: Administrators review and approve projects, changing status to `approved`
-5. **Participant Registration**: Volunteers register as users with `user_type='participant'`
-6. **Project Registration**: Participants register for approved projects, creating a `Registration` record with `status='registered'`
-7. **Project Completion**: After completing volunteer work, a `VolunteerRecord` is created with `status='pending'`, including hours worked and points earned
-8. **Record Approval**: Administrators verify and approve volunteer records, changing status to `approved`, which officially awards the hours and points to the participant
-
-The diagram illustrates the complete lifecycle from user registration to volunteer hour certification, showing how different user roles interact with the database at each stage.
-
-**Sequence Diagram:**
-![Data Flow Sequence](images/data_flow_sequence.png)
-
-This sequence diagram provides a detailed view of the interactions between system actors and database tables during the data population process:
-
-- **Initial Setup Phase**: Shows how the admin creates the first admin user directly in the User table
-- **Organization Workflow**: Demonstrates the sequence where organizations register, create projects, and wait for admin approval before projects become available
-- **Participant Workflow**: Illustrates how participants register, search for approved projects, create registration records, complete volunteer work, and finally receive approval for their volunteer hours
-
-The sequence diagram emphasizes the verification steps (e.g., checking if a project is approved before registration, verifying registration exists before creating volunteer records) and shows the communication flow between different system components. This helps understand the data integrity checks and approval workflows that ensure only valid data enters the system.
-
-## API Endpoints
-
-- `GET /api/projects` - List all approved projects
-- `POST /api/register-project` - Register for a project
-
-## Customization
-
-### Change Color Theme
-
-Edit `/static/css/style.css` and modify the CSS variables:
-```css
-:root {
-  --primary-green: #16a34a;
-  --secondary-blue: #3b82f6;
-  /* ... other variables */
-}
-```
-
-### Change Secret Key
-
-Edit `app.py` and change the secret key:
-```python
-app.config['SECRET_KEY'] = 'your-new-secret-key'
-```
+---
 
 ## License
-
-MIT License - feel free to use this project for educational or commercial purposes.
-
-## Support
-
-For issues or questions, please open an issue on the project repository.
+MIT License — free for educational or commercial use.
