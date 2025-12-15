@@ -6,7 +6,6 @@
  * Features:
  * - Dark/Light mode toggle with localStorage persistence
  * - Role-based accent colors (participant=green, organization=blue, admin=purple)
- * - Background pattern customization
  */
 (function () {
     // ========================================
@@ -59,64 +58,21 @@
         const btn = document.createElement('button');
         btn.className = 'theme-toggle-btn';
         btn.title = 'Toggle Dark/Light Mode';
-        btn.innerHTML = getIcon(savedTheme);
+        btn.innerHTML = getIcon(savedTheme) + '<span>Dark Mode</span>';
 
         btn.addEventListener('click', function () {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            btn.innerHTML = getIcon(newTheme);
+            btn.innerHTML = getIcon(newTheme) + '<span>' + (newTheme === 'dark' ? 'Light Mode' : 'Dark Mode') + '</span>';
         });
 
         return btn;
     }
 
     // ========================================
-    // 4. Create background pattern selector
-    // A-LEVEL: Custom background/pattern UI
-    // ========================================
-    function createBackgroundSelector() {
-        const container = document.createElement('div');
-        container.className = 'bg-selector';
-        container.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;';
-
-        const patterns = [
-            { value: 'none', label: '●', title: 'Solid' },
-            { value: 'dots', label: '◉', title: 'Dots' },
-            { value: 'grid', label: '⊞', title: 'Grid' },
-            { value: 'lines', label: '☰', title: 'Lines' }
-        ];
-
-        patterns.forEach(pattern => {
-            const btn = document.createElement('button');
-            btn.className = 'bg-pattern-btn';
-            btn.textContent = pattern.label;
-            btn.title = pattern.title;
-            btn.style.cssText = 'padding:0.25rem 0.5rem;border:1px solid var(--gray-300);border-radius:4px;background:var(--white);cursor:pointer;font-size:1rem;';
-            if (savedBackground === pattern.value) {
-                btn.style.borderColor = 'var(--primary-green)';
-                btn.style.backgroundColor = '#dcfce7';
-            }
-            btn.addEventListener('click', () => {
-                document.documentElement.setAttribute('data-bg', pattern.value);
-                localStorage.setItem('bgPattern', pattern.value);
-                // Update button styles
-                container.querySelectorAll('.bg-pattern-btn').forEach(b => {
-                    b.style.borderColor = 'var(--gray-300)';
-                    b.style.backgroundColor = 'var(--white)';
-                });
-                btn.style.borderColor = 'var(--primary-green)';
-                btn.style.backgroundColor = '#dcfce7';
-            });
-            container.appendChild(btn);
-        });
-
-        return container;
-    }
-
-    // ========================================
-    // 5. Apply role-based theme on load
+    // 4. Apply role-based theme on load
     // B-LEVEL: Different colors for different roles
     // ========================================
     document.addEventListener('DOMContentLoaded', function () {
@@ -130,17 +86,24 @@
         const authCard = document.querySelector('.auth-card');
 
         if (sidebarHeader) {
-            // Dashboard pages: Add controls to sidebar
-            sidebarHeader.style.display = 'flex';
-            sidebarHeader.style.flexWrap = 'wrap';
-            sidebarHeader.style.justifyContent = 'space-between';
-            sidebarHeader.style.alignItems = 'center';
-
-            const controls = document.createElement('div');
-            controls.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;';
-            controls.appendChild(themeBtn);
-            controls.appendChild(createBackgroundSelector());
-            sidebarHeader.appendChild(controls);
+            // Dashboard pages: Add theme toggle to sidebar-bottom (before logout)
+            const sidebarBottom = document.querySelector('.sidebar-bottom');
+            if (sidebarBottom) {
+                // Style the theme button to match nav-item style with left alignment
+                themeBtn.className = 'nav-item theme-toggle-btn';
+                themeBtn.style.cssText = 'justify-content: flex-start; text-align: left;';
+                
+                // Insert before logout button
+                const logoutBtn = sidebarBottom.querySelector('a[href="/logout"]');
+                if (logoutBtn) {
+                    sidebarBottom.insertBefore(themeBtn, logoutBtn);
+                } else {
+                    sidebarBottom.appendChild(themeBtn);
+                }
+            } else {
+                // Fallback: add to sidebar header if bottom doesn't exist
+                sidebarHeader.appendChild(themeBtn);
+            }
         } else if (headerContent) {
             // Find the nav buttons container (the last child div with flex/buttons)
             const navButtons = headerContent.querySelector('.flex');

@@ -172,6 +172,20 @@ textarea::placeholder {
     border-color: var(--primary-green);
 }
 
+/* Field-level error styling (used on auth + project forms) */
+.form-group.input-error input,
+.form-group.input-error select,
+.form-group.input-error textarea {
+    border-color: #ef4444;
+    background-color: #fff1f2;
+}
+
+.field-error-text {
+    color: #b91c1c;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
 /* Password toggle wrapper */
 .password-input-wrapper {
     position: relative;

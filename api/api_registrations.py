@@ -1,17 +1,37 @@
 """Registrations API routes."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
+import logging
 
-from models import db, Project, Registration, VolunteerRecord, SystemSettings, Notification
+from models import db, Project, Registration, VolunteerRecord
 
 bp = Blueprint('api_registrations', __name__)
+logger = logging.getLogger(__name__)
 
 
 def _check_and_auto_complete_project(project):
-    """Check if all participants are completed or cancelled, and auto-complete the project if so."""
+    """
+    Check if project should be auto-completed.
+    Conditions:
+    1. Project is not already completed
+    2. Project status is 'approved' or 'in_progress'
+    3. Project date has passed (or is today)
+    4. At least one participant has completed
+    5. All participants are finalized (completed, cancelled, or rejected)
+    """
     if project.status == 'completed':
         return False  # Already completed
+    
+    # Only auto-complete approved or in_progress projects
+    if project.status not in ('approved', 'in_progress'):
+        return False
+    
+    # Check if project date has passed
+    if project.date:
+        from datetime import date
+        if project.date > date.today():
+            return False  # Project date hasn't arrived yet
     
     # Get all registrations for this project
     all_registrations = Registration.query.filter_by(project_id=project.id).all()
@@ -19,9 +39,17 @@ def _check_and_auto_complete_project(project):
     if not all_registrations:
         return False  # No registrations, can't complete
     
-    # Check if all registrations are either 'completed' or 'cancelled'
+    # Count completed participants
+    completed_count = sum(1 for reg in all_registrations if reg.status == 'completed')
+    
+    # Must have at least one completed participant
+    if completed_count == 0:
+        return False  # No completed participants, can't auto-complete
+    
+    # Check if all registrations are finalized (completed, cancelled, or rejected)
+    # Note: 'registered' and 'approved' are not finalized states
     all_finalized = all(
-        reg.status in ('completed', 'cancelled') 
+        reg.status in ('completed', 'cancelled', 'rejected') 
         for reg in all_registrations
     )
     
@@ -42,10 +70,9 @@ def _check_and_auto_complete_project(project):
             ).first()
             
             if not existing_record:
-                # Check auto-approve setting for short records
-                auto_approve = SystemSettings.get_setting('auto_approve_under_hours', 'false')
+                # Auto-approve short records disabled
                 record_status = 'pending'
-                if auto_approve.lower() == 'true' and project.duration <= 4:
+                if project.duration <= 4 and False:
                     record_status = 'approved'
                 
                 # Create volunteer record for confirmed participants
@@ -61,6 +88,7 @@ def _check_and_auto_complete_project(project):
                 records_created += 1
     
     db.session.commit()
+    current_app.logger.info(f'Project auto-completed id={project.id} completed_participants={completed_count}')
     return True  # Project was auto-completed
 
 
@@ -130,17 +158,11 @@ def api_project_registrations_create(project_id):
     ).first()
     
     if existing:
-        if existing.status == 'cancelled':
-            # Allow re-registration if previous was cancelled
-            existing.status = 'registered'
-            existing.created_at = datetime.utcnow()
-            db.session.commit()
+        # If registration was cancelled or rejected, prevent re-registration
+        if existing.status in ('cancelled', 'rejected'):
             return jsonify({
-                'id': existing.id,
-                'project_id': project_id,
-                'status': existing.status,
-                'message': 'Successfully re-registered for project'
-            }), 201
+                'error': 'Cannot register for this project. Your previous registration was {} and cannot be re-registered.'.format(existing.status)
+            }), 400
         return jsonify({'error': 'Already registered for this project'}), 400
     
     # Check if project is full
@@ -159,12 +181,14 @@ def api_project_registrations_create(project_id):
     )
     db.session.add(registration)
     db.session.commit()
+    current_app.logger.info(f'Registration created id={registration.id} project={project_id} user={current_user.id}')
     
     # Check if min_participants reached to trigger in_progress status
     new_count = current_registrations + 1
     if project.status == 'approved' and new_count >= (project.min_participants or 1):
         project.status = 'in_progress'
         db.session.commit()
+        current_app.logger.info(f'Project moved to in_progress id={project.id} new_count={new_count}')
     
     return jsonify({
         'id': registration.id,
@@ -215,6 +239,7 @@ def api_registration_update(registration_id):
     """Update registration status."""
     registration = Registration.query.get_or_404(registration_id)
     project = registration.project
+    old_status = registration.status
     
     # Check permissions
     if current_user.user_type == 'organization':
@@ -230,6 +255,13 @@ def api_registration_update(registration_id):
     if new_status not in allowed_statuses:
         return jsonify({'error': 'Invalid status'}), 400
     
+    # Prevent reactivating cancelled registrations
+    # Once a registration is cancelled (by participant or organization), it cannot be reactivated
+    if registration.status == 'cancelled' and new_status != 'cancelled':
+        return jsonify({
+            'error': 'Cannot update registration status. Once a registration is cancelled, it cannot be reactivated.'
+        }), 400
+    
     registration.status = new_status
     
     # If organization confirms participant completed project, auto-create pending volunteer record
@@ -240,10 +272,16 @@ def api_registration_update(registration_id):
         ).first()
         
         if not existing_record:
-            # Check auto-approve setting for short records
-            auto_approve = SystemSettings.get_setting('auto_approve_under_hours', 'false')
+            # Auto-approve short records disabled (SystemSettings removed)
             record_status = 'pending'
-            if auto_approve.lower() == 'true' and project.duration <= 4:
+            # If you want auto-approve for short projects, adjust here
+            if project.duration <= 4 and False:
+                record_status = 'approved'
+            
+            # Auto-approve short records disabled (SystemSettings removed)
+            record_status = 'pending'
+            # If you want auto-approve for short projects, adjust here
+            if project.duration <= 4 and False:
                 record_status = 'approved'
             
             volunteer_record = VolunteerRecord(
@@ -257,25 +295,7 @@ def api_registration_update(registration_id):
             db.session.add(volunteer_record)
     
     db.session.commit()
-    
-    # Create notification for the participant when status changes
-    if new_status in ('approved', 'rejected', 'completed'):
-        notification_title = f'Registration {new_status.title()}'
-        if new_status == 'approved':
-            notification_message = f'Your registration for "{project.title}" has been approved!'
-        elif new_status == 'rejected':
-            notification_message = f'Your registration for "{project.title}" was not approved.'
-        else:  # completed
-            notification_message = f'Congratulations! You completed "{project.title}". Your volunteer hours are pending approval.'
-        
-        notification = Notification(
-            user_id=registration.user_id,
-            type='registration',
-            title=notification_title,
-            message=notification_message
-        )
-        db.session.add(notification)
-        db.session.commit()
+    current_app.logger.info(f'Registration updated id={registration.id} project={project.id} from={old_status} to={new_status} by user={current_user.id}')
     
     # Check if project should be auto-completed
     project_auto_completed = _check_and_auto_complete_project(project)
@@ -309,6 +329,7 @@ def api_registration_delete(registration_id):
     # Instead of deleting, mark as cancelled
     registration.status = 'cancelled'
     db.session.commit()
+    current_app.logger.info(f'Registration cancelled id={registration.id} project={registration.project_id} by user={current_user.id}')
     
     return jsonify({'message': 'Registration cancelled successfully'}), 200
 

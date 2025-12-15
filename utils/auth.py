@@ -1,4 +1,11 @@
-"""Authentication routes (login, register, logout)."""
+"""Authentication routes (login, register, logout).
+
+This blueprint handles:
+- Rendering combined login / register page
+- WTForms-based server-side validation
+- Account creation for participant / organization users
+- Session management via Flask-Login
+"""
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
@@ -20,7 +27,7 @@ def _format_form_errors(form) -> str:
 
 
 def _render_login_template(**context):
-    defaults = {'error': None, 'form_errors': None}
+    defaults = {'error': None, 'form_errors': None, 'initial_tab': 'login'}
     defaults.update(context)
     return render_template('login.html', **defaults)
 
@@ -30,6 +37,7 @@ def login():
     if request.method == 'POST':
         form = LoginForm(request.form)
         if not form.validate():
+            current_app.logger.warning("Login validation failed: %s", form.errors)
             return _render_login_template(
                 error=_format_form_errors(form),
                 form_errors=form.errors,
@@ -94,6 +102,11 @@ def login():
             elif user.user_type == 'admin':
                 return redirect(url_for('views.admin_panel'))
         else:
+            current_app.logger.warning(
+                "Login failed: invalid credentials identifier=%s user_type=%s",
+                form.username.data,
+                form.user_type.data,
+            )
             return _render_login_template(error='Invalid credentials')
     
     return _render_login_template()
@@ -104,9 +117,11 @@ def register():
     if request.method == 'POST':
         form = RegisterForm(request.form)
         if not form.validate():
+            current_app.logger.warning("Register validation failed: %s", form.errors)
             return _render_login_template(
                 error=_format_form_errors(form),
                 form_errors=form.errors,
+                initial_tab='register',
             )
 
         current_app.logger.info(
@@ -119,14 +134,17 @@ def register():
         # Validate user_type
         user_type = (form.user_type.data or '').lower()
         if user_type not in ('participant', 'organization'):
-            return _render_login_template(error='Invalid user type')
+            current_app.logger.warning("Register failed: invalid user_type=%s", user_type)
+            return _render_login_template(error='Invalid user type', initial_tab='register')
         
         # Check if user already exists
         if User.query.filter_by(username=form.username.data).first():
-            return _render_login_template(error='Username already exists')
+            current_app.logger.warning("Register failed: username exists username=%s", form.username.data)
+            return _render_login_template(error='Username already exists', initial_tab='register')
         
         if User.query.filter_by(email=form.email.data).first():
-            return _render_login_template(error='Email already exists')
+            current_app.logger.warning("Register failed: email exists email=%s", form.email.data)
+            return _render_login_template(error='Email already exists', initial_tab='register')
         
         # Create new user
         try:
@@ -141,11 +159,11 @@ def register():
         except Exception as e:
             current_app.logger.exception("Register failed")
             db.session.rollback()
-            return render_template('login.html', error=f'Register failed: {str(e)}')
+            return render_template('login.html', error=f'Register failed: {str(e)}', initial_tab='register')
         
         return redirect(url_for('auth.login'))
     
-    return _render_login_template()
+    return _render_login_template(initial_tab='register')
 
 
 @bp.route('/logout')

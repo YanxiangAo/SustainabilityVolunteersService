@@ -6,6 +6,11 @@ class Config:
     # Security: Read SECRET_KEY from environment. FAIL if not set in production.
     # We provide a default for dev ONLY.
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+    # Admin bootstrap credentials (env override with safe defaults for dev)
+    ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+    ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
+    ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
     
     # Database: Use DATABASE_URL environment variable, defaulting to local SQLite.
     # Note: SQLite URI format is sqlite:///path/to/db
@@ -28,3 +33,6 @@ class Config:
     
     # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+
+    # Seed demo data toggle (default True for dev, set to False in production)
+    SEED_SAMPLE_DATA = os.environ.get('SEED_SAMPLE_DATA', 'true').lower() in ('1', 'true', 'yes')

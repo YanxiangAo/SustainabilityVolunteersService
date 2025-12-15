@@ -1,76 +1,28 @@
-"""Projects API routes."""
-from flask import Blueprint, request, jsonify
+"""Projects API routes.
+
+This module exposes JSON APIs for:
+- Listing/filtering projects for the homepage and dashboards
+- Creating/updating/deleting projects for organizations
+- Admin operations such as reviewing and rating projects
+
+All user-provided project data is validated with Marshmallow schemas
+defined in `schemas.py` before being persisted.
+"""
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 
-from models import db, Project, Registration, SystemSettings, Comment, VolunteerRecord
+from models import db, Project, Registration, Comment, VolunteerRecord, User
+from marshmallow import ValidationError
+from schemas import ProjectCreateSchema, ProjectUpdateSchema
 
 bp = Blueprint('api_projects', __name__)
 logger = logging.getLogger(__name__)
 
-def validate_project_data(data, is_update=False):
-    """
-    Validate project input data.
-    Returns (is_valid, error_message, validated_data)
-    """
-    errors = []
-    validated = {}
-    
-    # Required fields for creation
-    required_fields = ['title', 'date', 'location', 'description']
-    if not is_update:
-        for field in required_fields:
-            if not data.get(field):
-                errors.append(f"Missing required field: {field}")
-    
-    # Title validation
-    if 'title' in data:
-        title = data['title'].strip()
-        if len(title) < 3:
-            errors.append("Title must be at least 3 characters")
-        validated['title'] = title
-        
-    # Numeric fields validation
-    try:
-        if 'max_participants' in data:
-            val = int(data['max_participants'])
-            if val < 1: errors.append("Max participants must be at least 1")
-            validated['max_participants'] = val
-            
-        if 'duration' in data:
-            val = float(data['duration'])
-            if val <= 0: errors.append("Duration must be positive")
-            validated['duration'] = val
-            
-        if 'points' in data:
-            val = int(data['points'])
-            if val < 0: errors.append("Points cannot be negative")
-            validated['points'] = val
-            
-    except (ValueError, TypeError):
-        errors.append("Invalid numeric format for participants, duration or points")
-
-    # Date validation
-    if 'date' in data and data['date']:
-        try:
-            if isinstance(data['date'], str):
-                date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
-                validated['date'] = date_obj
-        except ValueError:
-            errors.append("Invalid date format, expected YYYY-MM-DD")
-            
-    # Other fields
-    for field in ['description', 'category', 'location', 'requirements']:
-        if field in data:
-            validated[field] = data[field]
-            
-    return len(errors) == 0, "; ".join(errors), validated
-
-
 @bp.route('/api/v1/projects', methods=['GET'])
 def api_projects_list():
-    """Get all approved/in_progress projects (for homepage, exclude expired projects)."""
+    """Get projects for the homepage / dashboards with optional filters."""
     # Support query parameters
     status = request.args.get('status')  # None means all registrable statuses
     available = request.args.get('available', 'false').lower() == 'true'
@@ -97,21 +49,23 @@ def api_projects_list():
     
     if available:
         query = query.filter(Project.date >= today)
-    
-    # Exclude projects that the current user has already registered for
-    # Only apply this filter if user is authenticated and is a participant
-    if current_user.is_authenticated and current_user.user_type == 'participant':
-        # Get project IDs that the user has registered for (excluding cancelled)
-        registered_project_ids = db.session.query(Registration.project_id).filter_by(
-            user_id=current_user.id
-        ).filter(
-            Registration.status != 'cancelled'
-        ).distinct().all()
-        registered_project_ids = [pid[0] for pid in registered_project_ids]
-        if registered_project_ids:
-            query = query.filter(~Project.id.in_(registered_project_ids))
+        
+        # Exclude projects that the user has already registered for (any status)
+        # This ensures users don't see projects they've already interacted with
+        if current_user.is_authenticated and current_user.user_type == 'participant':
+            registered_project_ids = [
+                r.project_id for r in Registration.query.filter_by(user_id=current_user.id).all()
+            ]
+            if registered_project_ids:
+                query = query.filter(~Project.id.in_(registered_project_ids))
     
     projects = query.order_by(Project.date.asc()).all()
+    
+    # Get user's registrations if authenticated participant (for non-available queries)
+    user_registrations = {}
+    if current_user.is_authenticated and current_user.user_type == 'participant' and not available:
+        registrations = Registration.query.filter_by(user_id=current_user.id).all()
+        user_registrations = {r.project_id: r.status for r in registrations}
     
     result = []
     for p in projects:
@@ -134,6 +88,10 @@ def api_projects_list():
                 'name': p.organization.display_name or p.organization.username if p.organization else None
             }
         }
+        # Include user's registration status if exists (only for non-available queries)
+        if p.id in user_registrations:
+            project_data['user_registration_status'] = user_registrations[p.id]
+        
         # Only include if not expired when available=true
         if not available or (p.date and p.date >= today):
             result.append(project_data)
@@ -172,20 +130,31 @@ def api_project_detail(project_id):
 @bp.route('/api/v1/projects', methods=['POST'])
 @login_required
 def api_projects_create():
-    """Create a new project with validation."""
+    """Create a new project with validation.
+
+    Request body comes from the organization dashboard publish form.
+    We support both form-data (HTML form) and JSON payloads.
+    """
     if current_user.user_type != 'organization':
         return jsonify({'error': 'Only organizations can create projects'}), 403
     
-    data = request.form.to_dict() if request.form else request.get_json()
+    data = request.form.to_dict() if request.form else (request.get_json() or {})
     
-    # Input Validation
-    is_valid, error_msg, validated_data = validate_project_data(data)
-    if not is_valid:
-        return jsonify({'error': error_msg}), 400
+    # Input Validation using Marshmallow
+    # Validate and normalize incoming data with Marshmallow
+    schema = ProjectCreateSchema()
+    try:
+        validated_data = schema.load(data)
+    except ValidationError as err:
+        error_msg = "; ".join(
+            [f"{field}: {', '.join(msgs)}" for field, msgs in err.messages.items()]
+        )
+        current_app.logger.warning('Project creation validation failed: %s', err.messages)
+        return jsonify({'error': error_msg, 'details': err.messages}), 400
     
-    # Check if project requires review
-    requires_review = SystemSettings.get_setting('project_requires_review', 'true')
-    initial_status = 'pending' if requires_review.lower() == 'true' else 'approved'
+    # Require review by default (SystemSettings removed)
+    requires_review = 'true'
+    initial_status = 'pending' if requires_review == 'true' else 'approved'
     
     project = Project(
         title=validated_data.get('title'),
@@ -203,6 +172,7 @@ def api_projects_create():
     )
     db.session.add(project)
     db.session.commit()
+    logger.info(f'Project created id={project.id} status={initial_status} org={current_user.id}')
     
     message = 'Project created successfully'
     if initial_status == 'approved':
@@ -232,6 +202,7 @@ def api_projects_review(project_id):
         
     project.status = status
     db.session.commit()
+    logger.info(f'Project review id={project.id} status={status} admin={current_user.id}')
     
     return jsonify({
         'id': project.id,
@@ -240,10 +211,45 @@ def api_projects_review(project_id):
     })
 
 
+@bp.route('/api/v1/projects/<int:project_id>/rating', methods=['PATCH'])
+@login_required
+def api_projects_set_rating(project_id):
+    """Admin endpoint to set/update project rating (0–5 scale)."""
+    if current_user.user_type != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    project = Project.query.get_or_404(project_id)
+    data = request.get_json() or {}
+
+    try:
+        rating = float(data.get('rating', 0))
+    except (TypeError, ValueError):
+        current_app.logger.warning('Project rating validation failed: invalid rating value payload=%s', data)
+        return jsonify({'error': 'Invalid rating value'}), 400
+
+    if rating < 0 or rating > 5:
+        current_app.logger.warning('Project rating validation failed: out of range rating=%s', rating)
+        return jsonify({'error': 'Rating must be between 0 and 5'}), 400
+
+    project.rating = rating
+    db.session.commit()
+    logger.info(f'Project rating updated id={project.id} rating={project.rating} admin={current_user.id}')
+
+    return jsonify({
+        'id': project.id,
+        'rating': project.rating,
+        'message': 'Project rating updated successfully'
+    })
+
+
 @bp.route('/api/v1/projects/<int:project_id>', methods=['PATCH'])
 @login_required
 def api_projects_update(project_id):
-    """Update a project (status, etc.)."""
+    """Update a project (status, etc.).
+
+    For organization owners this is used to edit project details.
+    For admins this is mostly used to update project status.
+    """
     project = Project.query.get_or_404(project_id)
     data = request.get_json() or {}
     
@@ -258,9 +264,16 @@ def api_projects_update(project_id):
         if 'status' in data and data['status'] in ('approved', 'rejected'):
             return jsonify({'error': 'Cannot change status to approved/rejected'}), 403
             
-        is_valid, error_msg, validated_data = validate_project_data(data, is_update=True)
-        if not is_valid:
-            return jsonify({'error': error_msg}), 400
+        # Validate partial update payload using Marshmallow
+        schema = ProjectUpdateSchema(partial=True)
+        try:
+            validated_data = schema.load(data)
+        except ValidationError as err:
+            error_msg = "; ".join(
+                [f"{field}: {', '.join(msgs)}" for field, msgs in err.messages.items()]
+            )
+            current_app.logger.warning('Project update validation failed: %s', err.messages)
+            return jsonify({'error': error_msg, 'details': err.messages}), 400
 
         # Apply updates
         for key, value in validated_data.items():
@@ -270,6 +283,7 @@ def api_projects_update(project_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     db.session.commit()
+    logger.info(f'Project updated id={project.id} by user={current_user.id} status={project.status}')
     return jsonify({
         'id': project.id,
         'status': project.status,
@@ -311,11 +325,69 @@ def api_projects_delete(project_id):
         # Delete the project itself
         db.session.delete(project)
         db.session.commit()
+        current_app.logger.info(f'Project deleted id={pid} by org={current_user.id}')
         
         return jsonify({
             'message': 'Project deleted successfully'
         })
     except Exception as e:
         db.session.rollback()
-        logger.error(f'Error deleting project {project_id}: {str(e)}', exc_info=True)
+        current_app.logger.error(f'Error deleting project {project_id}: {str(e)}', exc_info=True)
         return jsonify({'error': f'Failed to delete project: {str(e)}'}), 500
+
+
+@bp.route('/project/<int:project_id>')
+def project_detail(project_id):
+    project = Project.query.get_or_404(project_id)
+    # Get organization info
+    organization = User.query.get(project.organization_id)
+    # Get registration count (only active registrations)
+    active_statuses = ('registered', 'approved')
+    registration_count = Registration.query.filter(
+        Registration.project_id == project.id,
+        Registration.status.in_(active_statuses)
+    ).count()
+    # Get comments for display
+    comments = Comment.query.filter_by(project_id=project.id).order_by(Comment.created_at.desc()).limit(20).all()
+    comments_data = []
+    for comment in comments:
+        comments_data.append({
+            'id': comment.id,
+            'user_name': comment.user.display_name or comment.user.username if comment.user else 'Unknown',
+            'user_type': comment.user.user_type.title() if comment.user else 'Unknown',
+            'comment': comment.content,
+            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else None
+        })
+    
+    # Check if current user is registered or is the organization owner
+    is_registered = False
+    can_comment = False
+    user_type = None
+    registration_status = None  # Track registration status for cancelled/rejected cases
+    if current_user.is_authenticated:
+        user_type = current_user.user_type
+        # Check if user is registered (for participants)
+        if user_type == 'participant':
+            existing_reg = Registration.query.filter(
+                Registration.user_id == current_user.id,
+                Registration.project_id == project.id
+            ).first()
+            if existing_reg:
+                registration_status = existing_reg.status
+                # Check if registered with active status
+                if existing_reg.status in active_statuses + ('completed',):
+                    is_registered = True
+                    can_comment = True
+        # Organization owner can always comment on their own projects
+        elif user_type == 'organization':
+            can_comment = (project.organization_id == current_user.id)
+    
+    return render_template('project_detail.html', 
+                         project=project, 
+                         organization=organization,
+                         registration_count=registration_count,
+                         comments=comments_data,
+                         is_registered=is_registered,
+                         can_comment=can_comment,
+                         user_type=user_type,
+                         registration_status=registration_status)

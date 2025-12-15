@@ -25,7 +25,8 @@ function getRegistrationStatusMeta(status) {
     const map = {
         'registered': { label: 'Pending', badge: 'badge-orange' },
         'approved': { label: 'Approved', badge: 'badge-success' },
-        'cancelled': { label: 'Declined', badge: 'badge-secondary' },
+        'cancelled': { label: 'Cancelled', badge: 'badge-secondary' },
+        'rejected': { label: 'Rejected', badge: 'badge-secondary' },
         'completed': { label: 'Completed', badge: 'badge-primary' }
     };
     if (map[normalized]) {
@@ -257,7 +258,7 @@ async function loadRegistrations() {
                     actions = `
                         <div class="flex gap-2">
                             <button class="btn btn-outline btn-sm" onclick="updateRegistrationStatus(${reg.id}, 'approved', ${projectData.project_id})">Approve</button>
-                            <button class="btn btn-outline btn-sm" style="color: #ef4444;" onclick="updateRegistrationStatus(${reg.id}, 'cancelled', ${projectData.project_id})">Decline</button>
+                            <button class="btn btn-outline btn-sm" style="color: #ef4444;" onclick="updateRegistrationStatus(${reg.id}, 'rejected', ${projectData.project_id})">Decline</button>
                         </div>
                     `;
                 } else if (reg.status === 'approved') {
@@ -672,6 +673,136 @@ function initDisplayNameEditor() {
     });
 }
 
+// Description editing functionality
+let originalDescription = '';
+
+function initDescriptionEditor() {
+    const editBtn = document.getElementById('edit-description-btn');
+    const saveBtn = document.getElementById('save-description-btn');
+    const cancelBtn = document.getElementById('cancel-description-btn');
+    const textarea = document.getElementById('description-input');
+    const messageEl = document.getElementById('description-message');
+    const charCountEl = document.getElementById('description-char-count');
+
+    if (!editBtn || !saveBtn || !cancelBtn || !textarea) return;
+
+    // Get current user ID
+    let currentUserId = null;
+
+    // Fetch current user info to get user ID and description
+    fetch('/api/v1/users/me')
+        .then(res => res.json())
+        .then(user => {
+            currentUserId = user.id;
+            originalDescription = user.description || '';
+            if (textarea && !textarea.value && originalDescription) {
+                textarea.value = originalDescription;
+            }
+            updateCharCount(textarea, charCountEl);
+        })
+        .catch(err => console.error('Failed to fetch user info:', err));
+
+    // Update character count
+    function updateCharCount(element, countEl) {
+        if (countEl) {
+            countEl.textContent = (element.value || '').length;
+        }
+    }
+
+    // Character count update on input
+    textarea.addEventListener('input', function () {
+        updateCharCount(textarea, charCountEl);
+    });
+
+    editBtn.addEventListener('click', function () {
+        originalDescription = textarea.value;
+        textarea.disabled = false;
+        textarea.style.backgroundColor = 'white';
+        textarea.style.borderColor = 'var(--secondary-blue)';
+        textarea.focus();
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-flex';
+        cancelBtn.style.display = 'inline-flex';
+        messageEl.style.display = 'none';
+    });
+
+    cancelBtn.addEventListener('click', function () {
+        textarea.value = originalDescription;
+        textarea.disabled = true;
+        textarea.style.backgroundColor = 'var(--gray-100)';
+        textarea.style.borderColor = 'var(--gray-300)';
+        editBtn.style.display = 'inline-flex';
+        saveBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+        messageEl.style.display = 'none';
+        updateCharCount(textarea, charCountEl);
+    });
+
+    saveBtn.addEventListener('click', async function () {
+        const newDescription = textarea.value.trim();
+
+        if (!currentUserId) {
+            showDescriptionMessage('Error: User ID not found. Please refresh the page.', 'error');
+            return;
+        }
+
+        // Disable buttons during save
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const response = await fetch(`/api/v1/users/${currentUserId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    description: newDescription || null
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                originalDescription = newDescription;
+                textarea.disabled = true;
+                textarea.style.backgroundColor = 'var(--gray-100)';
+                textarea.style.borderColor = 'var(--gray-300)';
+                editBtn.style.display = 'inline-flex';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+
+                showDescriptionMessage('Organization description updated successfully!', 'success');
+            } else {
+                const error = await response.json();
+                showDescriptionMessage(error.error || 'Failed to update organization description', 'error');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        } catch (error) {
+            console.error('Error updating organization description:', error);
+            showDescriptionMessage('Failed to update organization description. Please try again.', 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    });
+
+    function showDescriptionMessage(text, type) {
+        if (!messageEl) return;
+
+        messageEl.textContent = text;
+        messageEl.style.display = 'block';
+        messageEl.style.color = type === 'success' ? 'var(--secondary-blue)' : 'var(--accent-orange)';
+
+        if (type === 'success') {
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+    }
+}
+
 // Delete project functionality
 async function deleteProject(projectId) {
     const confirmed = await Modal.confirm(
@@ -714,7 +845,7 @@ function initDeleteAccountButton() {
         const confirmText = 'DELETE';
 
         const userInput = await Modal.prompt(
-            `WARNING: This action is irreversible!\n\nDeleting your account will permanently remove:\n• All your comments\n• All your notifications\n\n⚠️ IMPORTANT: You must delete all your projects first before deleting your account.\n\nType "${confirmText}" to confirm deletion:`,
+            `WARNING: This action is irreversible!\n\nDeleting your account will permanently remove:\n• All your information\n\n⚠️ IMPORTANT: You must delete all your projects first before deleting your account.\n\nType "${confirmText}" to confirm deletion:`,
             { title: 'Delete Account', placeholder: 'Type DELETE to confirm' }
         );
 
@@ -756,6 +887,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize display name editor
     initDisplayNameEditor();
     
+    // Initialize description editor
+    initDescriptionEditor();
+    
     // Initialize delete account button
     initDeleteAccountButton();
 
@@ -772,6 +906,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Draft management functions
     const DRAFT_STORAGE_KEY = 'project_draft';
 
+    /**
+     * Save the current project publish form contents to localStorage.
+     * This allows organizations to come back and restore unfinished drafts.
+     */
     function saveDraft() {
         const form = document.querySelector('form[action="/api/create-project"]');
         if (!form) return;
@@ -794,6 +932,9 @@ document.addEventListener('DOMContentLoaded', function () {
         Modal.success('Draft saved successfully!');
     }
 
+    /**
+     * Load draft JSON from localStorage (if any).
+     */
     function loadDraft() {
         const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (!draftJson) return null;
@@ -810,6 +951,9 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.removeItem(DRAFT_STORAGE_KEY);
     }
 
+    /**
+     * Populate the publish form fields with previously saved draft data.
+     */
     function restoreDraft(draftData) {
         if (!draftData) return;
 
@@ -852,6 +996,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    /**
+     * When entering the publish tab, check if a meaningful draft exists and
+     * prompt the user to restore or discard it using the custom Modal.
+     */
     async function checkAndPromptDraft() {
         const draftData = loadDraft();
         if (!draftData) return;
@@ -919,8 +1067,55 @@ document.addEventListener('DOMContentLoaded', function () {
     // Handle project creation form
     const createForm = document.querySelector('form[action="/api/create-project"]');
     if (createForm) {
+        // helpers for field error UI
+        /**
+         * Remove previous field-level validation errors from the publish form.
+         */
+        function clearProjectFormErrors() {
+            const publishTab = document.getElementById('publish-tab');
+            if (!publishTab) return;
+            publishTab.querySelectorAll('.form-group.input-error').forEach(g => g.classList.remove('input-error'));
+            publishTab.querySelectorAll('.field-error-text').forEach(el => el.remove());
+        }
+
+        /**
+         * Apply field-level validation errors returned by the backend
+         * (Marshmallow `details` object) by highlighting the corresponding
+         * inputs and injecting inline error text under each field.
+         */
+        function applyProjectFormErrors(details) {
+            if (!details) return;
+            const fieldIdMap = {
+                title: 'project-title',
+                description: 'project-description',
+                category: 'project-category',
+                date: 'project-date',
+                location: 'project-location',
+                max_participants: 'project-participants',
+                duration: 'project-duration',
+                points: 'project-points',
+                requirements: 'project-requirements'
+            };
+            Object.keys(details).forEach(field => {
+                const messages = details[field];
+                const firstMsg = Array.isArray(messages) ? messages[0] : messages;
+                const inputId = fieldIdMap[field];
+                if (!inputId) return;
+                const inputEl = document.getElementById(inputId);
+                if (!inputEl) return;
+                const group = inputEl.closest('.form-group');
+                if (!group) return;
+                group.classList.add('input-error');
+                const msgEl = document.createElement('div');
+                msgEl.className = 'field-error-text';
+                msgEl.textContent = firstMsg;
+                group.appendChild(msgEl);
+            });
+        }
+
         createForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+            clearProjectFormErrors();
 
             const formData = new FormData(this);
 
@@ -959,6 +1154,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     loadProjects();
                 } else {
+                    if (result.details) {
+                        applyProjectFormErrors(result.details);
+                    }
                     await Modal.error('Error: ' + (result.error || 'Failed to create project'));
                 }
             } catch (error) {

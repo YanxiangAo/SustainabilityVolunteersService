@@ -6,10 +6,17 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask
 from flask_login import LoginManager
 from flask_migrate import Migrate
-from config import Config
-from models import db, User, Project, Badge, UserBadge, Registration, VolunteerRecord, SystemSettings, Comment, Notification
+from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import text
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from models import db, User, Project, Registration, VolunteerRecord, Comment
+from schemas import ma
+
+# Load environment variables early so Config picks them up (supports .env files)
+# Use project-root .env even if the working directory differs (e.g., gunicorn/IDE)
+_DOTENV_PATH = find_dotenv()
+load_dotenv(_DOTENV_PATH)
+from config import Config
 
 # Import blueprints
 from api import register_blueprints
@@ -37,6 +44,7 @@ def create_app() -> Flask:
 
     # Initialize extensions
     db.init_app(app)
+    ma.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
@@ -93,88 +101,17 @@ def init_db(app: Flask) -> None:
     """Initialize the database schema and seed initial data."""
     with app.app_context():
         db.create_all()
-        
-        # database migrations for SQLite compatibility (manually handling schema evolution)
-        
-        # Migrate: add min_participants column if it doesn't exist
-        try:
-            db.session.execute(text("SELECT min_participants FROM project LIMIT 1"))
-        except Exception:
-            try:
-                db.session.execute(text("ALTER TABLE project ADD COLUMN min_participants INTEGER DEFAULT 1"))
-                db.session.commit()
-                app.logger.info("Migration: Added min_participants column to project table")
-            except Exception as e:
-                db.session.rollback()
-                app.logger.warning(f"Migration warning: {e}")
-        
-        # Check if notification table exists
-        try:
-            db.session.execute(text("SELECT id FROM notification LIMIT 1"))
-            # Notification table exists
-        except Exception:
-            # Silent catch, create_all should have handled it
-            db.session.rollback()
-
-        # Migrate: add ban fields if missing
-        try:
-            db.session.execute(text("SELECT ban_until, ban_reason FROM user LIMIT 1"))
-        except Exception:
-            try:
-                db.session.execute(text("ALTER TABLE user ADD COLUMN ban_until DATETIME"))
-            except Exception:
-                db.session.rollback()
-            try:
-                db.session.execute(text("ALTER TABLE user ADD COLUMN ban_reason VARCHAR(500)"))
-            except Exception:
-                db.session.rollback()
-            db.session.commit()
-            app.logger.info("Migration: Added ban_until/ban_reason columns to user table")
-        
-        # Migrate: add parent_id column to comment table if missing (for reply functionality)
-        try:
-            db.session.execute(text("SELECT parent_id FROM comment LIMIT 1"))
-        except Exception:
-            try:
-                db.session.execute(text("ALTER TABLE comment ADD COLUMN parent_id INTEGER"))
-                db.session.execute(text("CREATE INDEX IF NOT EXISTS ix_comment_parent_id ON comment(parent_id)"))
-                db.session.commit()
-                app.logger.info("Migration: Added parent_id column to comment table")
-            except Exception as e:
-                db.session.rollback()
-                app.logger.warning(f"Migration warning (parent_id): {e}")
-        
-        # Initialize default system settings if they don't exist
-        if not SystemSettings.query.filter_by(key='points_per_hour').first():
-            SystemSettings.set_setting('points_per_hour', '20')
-        if not SystemSettings.query.filter_by(key='auto_approve_under_hours').first():
-            SystemSettings.set_setting('auto_approve_under_hours', 'false')
-        if not SystemSettings.query.filter_by(key='project_requires_review').first():
-            SystemSettings.set_setting('project_requires_review', 'true')
 
         # Create admin user if it doesn't exist
         # Security: Read credentials from environment variables to avoid hardcoded secrets
-        admin_username = os.environ.get('ADMIN_USERNAME', 'admin')
+        admin_username = app.config.get('ADMIN_USERNAME', 'admin')
         admin = User.query.filter_by(username=admin_username).first()
         
         if not admin:
-            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
-            admin_password = os.environ.get('ADMIN_PASSWORD')
-            
-            # SECURITY: If no password in env, generate a secure random one
-            if not admin_password:
-                import secrets
-                import string
-                alphabet = string.ascii_letters + string.digits + "!@#$%"
-                admin_password = ''.join(secrets.choice(alphabet) for _ in range(16))
-                app.logger.warning("=" * 60)
-                app.logger.warning("SECURITY WARNING: No ADMIN_PASSWORD set in environment!")
-                app.logger.warning(f"Generated temporary admin password: {admin_password}")
-                app.logger.warning("Please set ADMIN_PASSWORD environment variable in production!")
-                app.logger.warning("=" * 60)
-                print("=" * 60)
-                print(f"ADMIN PASSWORD (save this!): {admin_password}")
-                print("=" * 60)
+            admin_email = app.config.get('ADMIN_EMAIL', 'admin@example.com')
+            admin_password = app.config.get('ADMIN_PASSWORD', 'admin123') or 'admin123'
+            if admin_password == 'admin123':
+                app.logger.warning("Using default admin password; override via ADMIN_PASSWORD.")
             
             admin = User(username=admin_username, email=admin_email, user_type='admin')
             admin.set_password(admin_password)
@@ -187,10 +124,31 @@ def init_db(app: Flask) -> None:
             db.session.commit()
             app.logger.info(f"Admin user '{admin_username}' created.")
 
-        # Seed sample data only if explicitly requested or if database seems empty/dev mode
-        # For this demo, we check if any projects exist
-        if Project.query.count() == 0:
+        # Seed sample data
+        # Optionally seed sample data
+        if app.config.get('SEED_SAMPLE_DATA', True):
             seed_sample_data(app)
+            update_project_dates(app)
+        else:
+            app.logger.info("SEED_SAMPLE_DATA disabled; skipping demo data seeding.")
+
+def update_project_dates(app: Flask) -> None:
+    """Update existing project dates to future dates so they're visible on homepage."""
+    today = datetime.utcnow().date()
+    projects = Project.query.all()
+    
+    for i, project in enumerate(projects):
+        # Update approved projects to future dates
+        if project.status in ('approved', 'in_progress'):
+            # Set dates to 15-30 days in the future
+            days_offset = 15 + (i % 16)  # Distribute dates between 15-30 days
+            project.date = today + timedelta(days=days_offset)
+            db.session.add(project)
+            app.logger.info(f"Updated project '{project.title}' date to {project.date}")
+    
+    db.session.commit()
+    app.logger.info(f"Updated {len(projects)} project dates")
+
 
 def seed_sample_data(app: Flask) -> None:
     """Populate the database with initial sample data for demonstration purposes."""
@@ -201,7 +159,6 @@ def seed_sample_data(app: Flask) -> None:
     # Note: In production, one should be very careful with this!
     Registration.query.delete()
     VolunteerRecord.query.delete()
-    UserBadge.query.delete()
     Comment.query.delete()
     db.session.commit()
     
@@ -234,86 +191,110 @@ def seed_sample_data(app: Flask) -> None:
             db.session.add(project)
             db.session.commit()
         else:
-            if 'status' in kwargs and kwargs['status'] == 'approved':
-                project.status = 'approved'
+            # Update project fields if provided
+            if 'status' in kwargs:
+                project.status = kwargs['status']
+            if 'date' in kwargs:
+                project.date = kwargs['date']
+            if 'location' in kwargs:
+                project.location = kwargs['location']
+            if 'category' in kwargs:
+                project.category = kwargs['category']
+            if 'description' in kwargs:
+                project.description = kwargs['description']
+            if 'max_participants' in kwargs:
+                project.max_participants = kwargs['max_participants']
+            if 'duration' in kwargs:
+                project.duration = kwargs['duration']
+            if 'points' in kwargs:
+                project.points = kwargs['points']
+            if 'rating' in kwargs:
+                project.rating = kwargs['rating']
+            if 'requirements' in kwargs:
+                project.requirements = kwargs['requirements']
                 db.session.add(project)
                 db.session.commit()
         return project
     
-    # Create sample users
+    # Keep three accounts: admin (created earlier), one org, one participant
     greenearth = _get_or_create_user("greenearth", "contact@greenearth.org", "organization", "Green Earth Environmental")
     emma = _get_or_create_user("emma", "emma@example.com", "participant", "Emma Wilson")
+    admin_user = User.query.filter_by(user_type='admin').first()
     
     # Create sample projects covering various states
+    # Use future dates for active projects and past dates for completed ones
+    today = datetime.utcnow().date()
     projects = {
         "pending_project": _get_or_create_project(
             "Community Garden Initiative", greenearth,
-            date=date(2025, 12, 1), location="Community Center",
+            date=today + timedelta(days=30), location="Community Center",
             category="Environmental", description="Establish a community garden to promote sustainable living and local food production.",
             max_participants=15, duration=6.0, points=100, rating=0.0,
             requirements="Interest in gardening and sustainable practices."
         ),
-        "registered_project": _get_or_create_project(
+        "open_project": _get_or_create_project(
             "Beach Cleanup Action", greenearth,
-            date=date(2025, 12, 5), location="Golden Coast",
+            date=today + timedelta(days=15), location="Golden Coast",
             category="Environmental", description="Join a community effort to remove debris from the shoreline and protect marine ecosystems.",
             max_participants=25, duration=4.5, points=70, rating=4.6,
             requirements="Able to walk on sandy terrain and handle cleanup tools."
         ),
-        "approved_registration_project": _get_or_create_project(
+        "in_progress_project": _get_or_create_project(
             "River Conservation Program", greenearth,
-            date=date(2025, 12, 8), location="Riverside Park",
+            date=today + timedelta(days=10), location="Riverside Park",
             category="Environmental", description="Monitor water quality and clean up riverbanks to protect aquatic ecosystems.",
             max_participants=20, duration=5.0, points=75, rating=4.7,
             requirements="Comfortable working near water and able to use testing equipment."
         ),
-        "cancelled_registration_project": _get_or_create_project(
-            "Wildlife Habitat Restoration", greenearth,
-            date=date(2025, 12, 12), location="Nature Reserve",
-            category="Environmental", description="Restore native habitats and create safe spaces for local wildlife.",
-            max_participants=18, duration=4.0, points=65, rating=4.5,
-            requirements="Physical fitness and respect for wildlife."
-        ),
         "rejected_project": _get_or_create_project(
             "Night Market Setup", greenearth,
-            date=date(2025, 12, 10), location="Downtown Square",
+            date=today + timedelta(days=22), location="Downtown Square",
             category="Education", description="Help set up and manage a community night market event.",
             max_participants=20, duration=5.0, points=80, rating=0.0,
             requirements="Available in evenings and able to lift moderate weights."
         ),
         "completed_project": _get_or_create_project(
             "Urban Greening Planting Project", greenearth,
-            date=date(2025, 11, 20), location="City Park",
+            date=today - timedelta(days=30), location="City Park",
             category="Environmental", description="Plant native trees and shrubs to improve urban biodiversity and air quality.",
             max_participants=30, duration=5.0, points=90, rating=4.9,
             requirements="Comfortable with outdoor manual work for several hours."
         ),
-        "approved_record_project": _get_or_create_project(
+        "record_pending_project": _get_or_create_project(
             "Community Book Donation", greenearth,
-            date=date(2025, 11, 25), location="Civic Center",
+            date=today - timedelta(days=10), location="Civic Center",
             category="Education", description="Organize and catalog donated books before delivering them to local community centers.",
             max_participants=12, duration=3.5, points=55, rating=4.3,
             requirements="Attention to detail and ability to lift small boxes."
         ),
+        "record_rejected_project": _get_or_create_project(
+            "Urban Street Tree Care", greenearth,
+            date=today - timedelta(days=8), location="Main Avenue",
+            category="Environmental", description="Water and mulch street trees to improve urban canopy health.",
+            max_participants=12, duration=2.0, points=40, rating=4.0,
+            requirements="Comfortable with light outdoor work."
+        ),
     }
     
     # Set statuses explicitly
-    projects["registered_project"].status = 'approved'
-    projects["approved_registration_project"].status = 'approved'
-    projects["cancelled_registration_project"].status = 'approved'
-    projects["approved_record_project"].status = 'approved'
+    projects["open_project"].status = 'approved'
+    projects["in_progress_project"].status = 'in_progress'
     projects["pending_project"].status = 'pending'
     projects["rejected_project"].status = 'rejected'
     projects["completed_project"].status = 'completed'
+    projects["record_pending_project"].status = 'approved'
+    projects["record_rejected_project"].status = 'approved'
     
     db.session.commit()
     
-    # Seed registrations
+    # Seed registrations to cover statuses: registered, approved, cancelled, completed, rejected
     registrations = [
-        (emma, projects["registered_project"], "registered"),
-        (emma, projects["approved_registration_project"], "approved"),
-        (emma, projects["cancelled_registration_project"], "cancelled"),
+        (emma, projects["open_project"], "registered"),
+        (emma, projects["in_progress_project"], "approved"),
         (emma, projects["completed_project"], "completed"),
+        (emma, projects["record_pending_project"], "completed"),
+        (emma, projects["record_rejected_project"], "rejected"),
+        (emma, projects["pending_project"], "cancelled"),
     ]
     
     for user, proj, status in registrations:
@@ -328,9 +309,8 @@ def seed_sample_data(app: Flask) -> None:
     
     db.session.commit()
     
-    # Create records for completed projects
-    completed_regs = Registration.query.filter_by(status='completed').all()
-    for reg in completed_regs:
+    # Create records for completed registrations (pending and approved variants)
+    for reg in Registration.query.filter_by(status='completed').all():
         existing = VolunteerRecord.query.filter_by(user_id=reg.user_id, project_id=reg.project_id).first()
         if not existing:
             project = reg.project
@@ -339,60 +319,52 @@ def seed_sample_data(app: Flask) -> None:
                 project_id=reg.project_id,
                 hours=project.duration,
                 points=project.points,
-                status='pending',
+                status='pending',  # pending review by default
                 completed_at=datetime.utcnow()
             )
             db.session.add(record)
     
-    # Seed historical records
-    if not VolunteerRecord.query.filter_by(user_id=emma.id, project_id=projects["approved_record_project"].id).first():
-        record = VolunteerRecord(
+    # Additional record variants for review states
+    if not VolunteerRecord.query.filter_by(user_id=emma.id, project_id=projects["record_pending_project"].id).first():
+        db.session.add(VolunteerRecord(
             user_id=emma.id,
-            project_id=projects["approved_record_project"].id,
-            hours=3.5,
-            points=55,
-            status='approved',
+            project_id=projects["record_pending_project"].id,
+            hours=projects["record_pending_project"].duration,
+            points=projects["record_pending_project"].points,
+            status='pending',
             completed_at=datetime.utcnow()
-        )
-        db.session.add(record)
+        ))
+    if not VolunteerRecord.query.filter_by(user_id=emma.id, project_id=projects["record_rejected_project"].id).first():
+        db.session.add(VolunteerRecord(
+            user_id=emma.id,
+            project_id=projects["record_rejected_project"].id,
+            hours=projects["record_rejected_project"].duration,
+            points=projects["record_rejected_project"].points,
+            status='rejected',
+            completed_at=datetime.utcnow()
+        ))
     
-    db.session.commit()
+    # Seed comments (participants + organization) and a reply
+    emma_comment = Comment(
+        user_id=emma.id,
+        project_id=projects["open_project"].id,
+        content="Looking forward to joining the beach cleanup!"
+    )
+    org_comment = Comment(
+        user_id=greenearth.id,
+        project_id=projects["in_progress_project"].id,
+        content="Thanks for the support! We still need 5 more volunteers."
+    )
+    db.session.add_all([emma_comment, org_comment])
+    db.session.flush()  # obtain IDs for replies
     
-    # Seed Badges
-    badge_definitions = [
-        {"code": "rising-star", "name": "Rising Star", "description": "Complete first volunteer service", "accent_color": "var(--accent-yellow)", "background_color": "#fef3c7", "icon": "star"},
-        {"code": "eco-pioneer", "name": "Eco Pioneer", "description": "Complete 50 hours of environmental service", "accent_color": "var(--primary-green)", "background_color": "#dcfce7", "icon": "leaf"},
-        {"code": "compassion", "name": "Compassion Ambassador", "description": "Volunteer for 6 consecutive months", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "heart"},
-        {"code": "public-welfare", "name": "Public Welfare Expert", "description": "Complete 100 hours of service", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "medal"},
-        {"code": "team-leader", "name": "Team Leader", "description": "Organize 10 volunteer activities", "accent_color": "var(--gray-500)", "background_color": "#f3f4f6", "icon": "leader"}
-    ]
-    
-    badges_map = {}
-    for definition in badge_definitions:
-        badge = Badge.query.filter_by(code=definition["code"]).first()
-        if not badge:
-            badge = Badge(**definition)
-            db.session.add(badge)
-        badges_map[definition['code']] = badge
-    db.session.commit()
-    
-    # Assign badges
-    if emma:
-        earned_badges = ["rising-star", "eco-pioneer"]
-        for code, badge_obj in badges_map.items():
-            if not badge_obj.id: continue # Should be committed
-            
-            earned = code in earned_badges
-            ub = UserBadge.query.filter_by(user_id=emma.id, badge_id=badge_obj.id).first()
-            if not ub:
-                ub = UserBadge(
-                    user_id=emma.id,
-                    badge_id=badge_obj.id,
-                    earned=earned,
-                    earned_at=datetime.utcnow() if earned else None,
-                    progress=100.0 if earned else 0.0
-                )
-                db.session.add(ub)
+    reply_comment = Comment(
+        user_id=greenearth.id,
+        project_id=projects["open_project"].id,
+        parent_id=emma_comment.id,
+        content="Welcome! Please check the packing list we just uploaded."
+    )
+    db.session.add(reply_comment)
     
     db.session.commit()
     app.logger.info("Sample data seeded successfully.")

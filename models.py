@@ -25,7 +25,6 @@ class User(UserMixin, db.Model):
     projects = relationship('Project', backref='organization', lazy=True)
     registrations = relationship('Registration', backref='user', lazy=True)
     volunteer_records = relationship('VolunteerRecord', backref='user', lazy=True)
-    badge_awards = relationship('UserBadge', backref='user', lazy=True)
     
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
@@ -59,7 +58,7 @@ class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    status = db.Column(db.String(20), default='registered')  # registered, completed, cancelled，approved
+    status = db.Column(db.String(20), default='registered')  # registered, completed, cancelled, approved, rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class VolunteerRecord(db.Model):
@@ -70,32 +69,6 @@ class VolunteerRecord(db.Model):
     points = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, approved，rejected
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-
-class Badge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    accent_color = db.Column(db.String(20))
-    background_color = db.Column(db.String(20))
-    icon = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    user_badges = relationship('UserBadge', backref='badge', lazy=True)
-
-
-class UserBadge(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    badge_id = db.Column(db.Integer, db.ForeignKey('badge.id'), nullable=False)
-    earned = db.Column(db.Boolean, default=False)
-    earned_at = db.Column(db.DateTime)
-    progress = db.Column(db.Float, default=0.0)
-    
-    __table_args__ = (
-        UniqueConstraint('user_id', 'badge_id', name='uq_user_badge'),
-    )
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,41 +81,3 @@ class Comment(db.Model):
     project = relationship('Project', backref='comments', lazy=True)
     user = relationship('User', backref='comments', lazy=True)
     parent = relationship('Comment', remote_side=[id], backref='replies', lazy=True)
-
-class SystemSettings(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(100), unique=True, nullable=False)
-    value = db.Column(db.Text, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    @staticmethod
-    def get_setting(key, default=None):
-        """Get a setting value by key"""
-        setting = SystemSettings.query.filter_by(key=key).first()
-        return setting.value if setting else default
-    
-    @staticmethod
-    def set_setting(key, value):
-        """Set a setting value by key"""
-        setting = SystemSettings.query.filter_by(key=key).first()
-        if setting:
-            setting.value = str(value)
-            setting.updated_at = datetime.utcnow()
-        else:
-            setting = SystemSettings(key=key, value=str(value))
-            db.session.add(setting)
-        db.session.commit()
-        return setting
-
-
-class Notification(db.Model):
-    """System notifications for users."""
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    type = db.Column(db.String(50), nullable=False)  # system, approval, rejection, info
-    title = db.Column(db.String(200), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    is_read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    user = relationship('User', backref='notifications', lazy=True)

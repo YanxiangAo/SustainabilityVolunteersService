@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 
-from models import Project, Registration, VolunteerRecord, Badge, UserBadge, User
+from models import Project, Registration, VolunteerRecord, User
 
 bp = Blueprint('api_dashboard', __name__)
 
@@ -25,9 +25,11 @@ def api_users_me_dashboard():
             if registration.status == 'completed':
                 progress = 100
             elif registration.status == 'in_progress':
-                progress = 40
+                progress = 75
             elif registration.status == 'approved':
-                progress = 60
+                progress = 50
+            elif registration.status == 'registered':
+                progress = 25
 
             registration_payload.append({
                 'id': project.id,
@@ -37,23 +39,6 @@ def api_users_me_dashboard():
                 'date': project.date.strftime('%Y-%m-%d'),
                 'status': status_label,
                 'progress': progress
-            })
-
-        # Badge data
-        all_badges = Badge.query.order_by(Badge.id.asc()).all()
-        user_badges = {ub.badge_id: ub for ub in UserBadge.query.filter_by(user_id=current_user.id).all()}
-
-        badges_payload = []
-        for badge in all_badges:
-            user_badge = user_badges.get(badge.id)
-            badges_payload.append({
-                'code': badge.code,
-                'name': badge.name,
-                'description': badge.description,
-                'earned': bool(user_badge and user_badge.earned),
-                'accent_color': badge.accent_color,
-                'background_color': badge.background_color,
-                'icon': badge.icon
             })
 
         # Calculate statistics
@@ -77,15 +62,14 @@ def api_users_me_dashboard():
                 'completed': completed_count,
                 'upcoming': upcoming_count
             },
-            'registrations': registration_payload,
-            'badges': badges_payload
+            'registrations': registration_payload
         })
     
     elif user_type == 'organization':
         # Get organization's projects
         projects = Project.query.filter_by(organization_id=current_user.id).all()
         
-        active_projects = sum(1 for p in projects if p.status == 'approved')
+        active_projects = sum(1 for p in projects if p.status in ('approved', 'in_progress'))
         active_registration_statuses = ('registered', 'approved')
         total_participants = sum(
             Registration.query.filter(

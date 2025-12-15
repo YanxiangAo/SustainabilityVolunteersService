@@ -10,7 +10,6 @@ from api.api_users import bp as api_users_bp
 from api.api_comments import bp as api_comments_bp
 from api.api_admin import bp as api_admin_bp
 from api.api_dashboard import bp as api_dashboard_bp
-from api.api_notifications import bp as api_notifications_bp
 
 
 def register_blueprints(app: Flask) -> None:
@@ -24,7 +23,11 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(api_comments_bp)
     app.register_blueprint(api_admin_bp)
     app.register_blueprint(api_dashboard_bp)
-    app.register_blueprint(api_notifications_bp)
+
+
+
+
+
 
 
 

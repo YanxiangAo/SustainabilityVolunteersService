@@ -13,8 +13,21 @@
 </head>
 
 <body>
+    <style>
+        .input-error input,
+        .input-error select {
+            border: 1px solid #dc2626;
+            background: #fff1f2;
+        }
+        .error-text {
+            color: #b91c1c;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    </style>
     <div class="auth-container">
-        <div class="auth-card">
+            <!-- Combined login / register card for all auth flows -->
+            <div class="auth-card">
             <!-- Logo and Title -->
             <div class="text-center mb-6">
                 <div class="flex items-center justify-center gap-2 mb-4">
@@ -49,29 +62,35 @@
                     {% endif %}
                     <!-- Tabs -->
                     <div class="tabs">
-                        <button class="tab active" data-tab="login">Login</button>
-                        <button class="tab" data-tab="register">Register</button>
+                        <button class="tab {% if initial_tab == 'login' %}active{% endif %}" data-tab="login">Login</button>
+                        <button class="tab {% if initial_tab == 'register' %}active{% endif %}" data-tab="register">Register</button>
                     </div>
 
-                    <!-- Login Form -->
-                    <div class="tab-content active" id="login-tab">
+                    <!-- Login Form (existing users) -->
+                    <div class="tab-content {% if initial_tab == 'login' %}active{% endif %}" id="login-tab">
                         <form id="login-form" method="POST" action="{{ url_for('auth.login') }}">
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('user_type') %}input-error{% endif %}">
                                 <label for="login-type">User Type</label>
                                 <select id="login-type" name="user_type" required>
                                     <option value="participant">Participant</option>
                                     <option value="organization">Organization</option>
                                     <option value="admin">Administrator</option>
                                 </select>
+                                {% if form_errors and form_errors.get('user_type') %}
+                                <div class="error-text">{{ form_errors.get('user_type')[0] }}</div>
+                                {% endif %}
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('username') %}input-error{% endif %}">
                                 <label for="login-username">Username / Email</label>
                                 <input type="text" id="login-username" name="username"
                                     placeholder="Enter username or email" required>
+                                {% if form_errors and form_errors.get('username') %}
+                                <div class="error-text">{{ form_errors.get('username')[0] }}</div>
+                                {% endif %}
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('password') %}input-error{% endif %}">
                                 <label for="login-password">Password</label>
                                 <div class="password-input-wrapper">
                                     <input type="password" id="login-password" name="password"
@@ -92,37 +111,45 @@
                                     <input type="checkbox" id="remember" name="remember">
                                     <label for="remember" style="margin: 0; font-weight: normal;">Remember me</label>
                                 </div>
-                                <a href="#" class="text-sm text-blue-600">Forgot password?</a>
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                         </form>
                     </div>
 
-                    <!-- Register Form -->
-                    <div class="tab-content" id="register-tab">
+                    <!-- Register Form (new users) -->
+                    <div class="tab-content {% if initial_tab == 'register' %}active{% endif %}" id="register-tab">
                         <form id="register-form" method="POST" action="{{ url_for('auth.register') }}">
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('user_type') %}input-error{% endif %}">
                                 <label for="register-type">User Type</label>
                                 <select id="register-type" name="user_type" required>
                                     <option value="participant">Participant</option>
                                     <option value="organization">Organization</option>
                                 </select>
+                                {% if form_errors and form_errors.get('user_type') %}
+                                <div class="error-text">{{ form_errors.get('user_type')[0] }}</div>
+                                {% endif %}
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('username') %}input-error{% endif %}">
                                 <label for="register-username">Username</label>
                                 <input type="text" id="register-username" name="username" placeholder="Enter username"
                                     required>
+                                {% if form_errors and form_errors.get('username') %}
+                                <div class="error-text">{{ form_errors.get('username')[0] }}</div>
+                                {% endif %}
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('email') %}input-error{% endif %}">
                                 <label for="register-email">Email</label>
                                 <input type="email" id="register-email" name="email" placeholder="Enter email address"
                                     required>
+                                {% if form_errors and form_errors.get('email') %}
+                                <div class="error-text">{{ form_errors.get('email')[0] }}</div>
+                                {% endif %}
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('password') %}input-error{% endif %}">
                                 <label for="register-password">Password</label>
                                 <div class="password-input-wrapper">
                                     <input type="password" id="register-password" name="password"
@@ -138,10 +165,13 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group {% if form_errors and form_errors.get('confirm_password') %}input-error{% endif %}">
                                 <label for="register-confirm-password">Confirm Password</label>
                                 <input type="password" id="register-confirm-password" name="confirm_password"
                                     placeholder="Re-enter password" required minlength="6">
+                                {% if form_errors and form_errors.get('confirm_password') %}
+                                <div class="error-text">{{ form_errors.get('confirm_password')[0] }}</div>
+                                {% endif %}
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>

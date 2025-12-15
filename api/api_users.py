@@ -1,11 +1,13 @@
 """Users API routes."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user, logout_user
 from datetime import datetime, timedelta
+import logging
 
-from models import db, User, Registration, VolunteerRecord, UserBadge, Notification, Comment, Project
+from models import db, User, Registration, VolunteerRecord, Comment, Project
 
 bp = Blueprint('api_users', __name__)
+logger = logging.getLogger(__name__)
 
 
 @bp.route('/api/v1/users', methods=['GET'])
@@ -171,6 +173,7 @@ def api_user_update(user_id):
         return jsonify({'error': 'Unauthorized'}), 403
     
     db.session.commit()
+    logger.info(f'User updated id={user.id} by user={current_user.id} type={current_user.user_type}')
     
     return jsonify({
         'id': user.id,
@@ -206,31 +209,40 @@ def api_user_delete_admin(user_id):
 
 def _delete_user(user, is_admin_action=False):
     """Helper function to perform user deletion logic."""
+    # If a LocalProxy (current_user) is passed, unwrap to the actual model instance
+    if hasattr(user, "_get_current_object"):
+        user = user._get_current_object()
     user_id = user.id
     
-    # For organizations, check if they have projects
-    # Users must delete all projects before deleting their account
+    # For organizations
     if user.user_type == 'organization':
-        project_count = Project.query.filter_by(organization_id=user_id).count()
-        if project_count > 0:
+        projects = Project.query.filter_by(organization_id=user_id).all()
+        project_count = len(projects)
+        if project_count > 0 and not is_admin_action:
             return jsonify({
                 'error': f'Cannot delete account: You have {project_count} project(s). Please delete all projects first before deleting your account.'
             }), 400
     
     # Cascade delete all associated data
     try:
+        # If admin deletes an organization, also delete its projects and related data
+        if user.user_type == 'organization' and is_admin_action:
+            org_projects = Project.query.filter_by(organization_id=user_id).all()
+            for proj in org_projects:
+                # Delete comments under this project
+                Comment.query.filter_by(project_id=proj.id).delete(synchronize_session=False)
+                # Delete registrations and volunteer records for this project
+                Registration.query.filter_by(project_id=proj.id).delete(synchronize_session=False)
+                VolunteerRecord.query.filter_by(project_id=proj.id).delete(synchronize_session=False)
+                # Finally delete the project
+                db.session.delete(proj)
         
         # Delete comments and their replies (cascade delete for user's own comments)
-        # First, get all comment IDs from this user
         user_comment_ids = [c.id for c in Comment.query.filter_by(user_id=user_id).all()]
-        # Delete all replies to these comments
         if user_comment_ids:
             Comment.query.filter(Comment.parent_id.in_(user_comment_ids)).delete(synchronize_session=False)
-        # Then delete the user's own comments
         Comment.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         
-        Notification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
-        UserBadge.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         VolunteerRecord.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         Registration.query.filter_by(user_id=user_id).delete(synchronize_session=False)
         
@@ -240,6 +252,8 @@ def _delete_user(user, is_admin_action=False):
         
         db.session.delete(user)
         db.session.commit()
+        actor_id = getattr(current_user._get_current_object(), "id", None) if hasattr(current_user, "_get_current_object") else getattr(current_user, "id", None)
+        current_app.logger.info(f'User deleted id={user_id} by {"admin" if is_admin_action else "self"} user={actor_id}')
         
         return jsonify({
             'message': 'Account deleted successfully',
@@ -247,4 +261,5 @@ def _delete_user(user, is_admin_action=False):
         })
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f'Error deleting user id={user_id}: {str(e)}', exc_info=True)
         return jsonify({'error': f'Failed to delete user: {str(e)}'}), 500

@@ -119,7 +119,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 projectsGrid.innerHTML = '<p class="text-gray-500 text-center py-8">No projects are available at the moment.</p>';
                 return;
             }
-            projectsGrid.innerHTML = projects.map(project => renderProjectCard(project)).join('');
+            // Limit to maximum 4 featured projects
+            const featuredProjects = projects.slice(0, 4);
+            projectsGrid.innerHTML = featuredProjects.map(project => renderProjectCard(project)).join('');
         });
     }
 });

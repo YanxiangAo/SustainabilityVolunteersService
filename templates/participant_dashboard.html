@@ -13,10 +13,10 @@
 </head>
 
 <body class="bg-subtle">
-    <!-- Sidebar -->
+    <!-- Sidebar: participant navigation (profile, browse projects, registrations, records) -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="flex items-center gap-2 mb-2" style="justify-content: space-between;">
+            <div class="flex items-center gap-2 mb-2">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <div class="icon-container icon-container-lg icon-container-green">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -31,16 +31,6 @@
                             }}</div>
                     </div>
                 </div>
-                <!-- Notification Bell -->
-                <button id="notification-bell" class="notification-bell"
-                    onclick="document.querySelector('[data-tab=notifications]')?.click() || showNotificationsModal()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" style="color: var(--gray-600);">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                    <span id="notification-badge" class="notification-badge"></span>
-                </button>
             </div>
         </div>
 
@@ -94,136 +84,13 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content: tabbed dashboard controlled by static/js/participant.js -->
     <main class="main-content">
-        <!-- Overview Tab -->
+        <!-- Overview Tab: personal stats, profile, and gamification journey -->
         <div class="tab-content active" id="overview-tab">
             <div class="mb-8">
                 <h2>Personal Dashboard</h2>
                 <p class="text-gray-600">View your volunteer statistics and achievements</p>
-            </div>
-
-            <!-- Profile Information Section -->
-            <div class="card mb-8">
-                <div class="card-header">
-                    <h3 style="margin: 0;">Profile</h3>
-                </div>
-                <div class="card-content">
-                    <div class="grid grid-cols-2" style="gap: 1.5rem;">
-                        <!-- Display Name -->
-                        <div>
-                            <label class="form-label">Display
-                                Name</label>
-                            <div class="flex items-center gap-2" id="display-name-container">
-                                <input type="text" id="display-name-input" class="form-input-readonly"
-                                    value="{{ user.display_name or '' }}" placeholder="{{ user.username }}" disabled
-                                    style="flex: 1;" maxlength="120" />
-                                <button id="save-display-name-btn" class="btn btn-primary"
-                                    style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Save</button>
-                                <button id="cancel-display-name-btn" class="btn btn-outline"
-                                    style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Cancel</button>
-                                <button id="edit-display-name-btn" class="btn btn-outline"
-                                    style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div id="display-name-message"
-                                style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
-                        </div>
-
-                        <!-- Account Info -->
-                        <div>
-                            <label class="form-label">Account</label>
-                            <div class="form-display">
-                                <div class="form-display-value">
-                                    <span class="form-display-label">Username:</span> <span>{{ user.username }}</span>
-                                </div>
-                                <div class="form-display-value">
-                                    <span class="form-display-label">Email:</span> <span>{{ user.email }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="card card-danger mb-8">
-                <div class="card-header card-danger-header">
-                    <h3 class="text-danger" style="margin: 0;">Danger Zone</h3>
-                </div>
-                <div class="card-content">
-                    <div class="flex-between">
-                        <div>
-                            <p style="margin: 0; font-weight: 500;">Delete Account</p>
-                            <p class="text-sm text-gray-600" style="margin: 0.25rem 0 0 0;">Permanently delete your
-                                account and all associated data. This action cannot be undone.</p>
-                        </div>
-                        <button id="delete-account-btn" class="btn btn-danger-solid">
-                            Delete Account
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- A-LEVEL INNOVATION: Gamification Milestone Journey -->
-            <!-- Visual progress tracker showing volunteer achievements and next goals -->
-            <div class="card journey-card mb-8">
-                <div class="card-content">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green);">
-                                <path
-                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                            </svg>
-                            Volunteer Journey
-                        </h3>
-                        <span class="badge badge-primary" id="volunteer-level">Level 1</span>
-                    </div>
-                    <div style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
-                        <!-- Milestone 1: First Step -->
-                        <div class="milestone-card completed" id="milestone-1">
-                            <div class="milestone-emoji">🌱</div>
-                            <div class="milestone-title">First Step</div>
-                            <div class="milestone-hours">1 hour</div>
-                        </div>
-                        <!-- Milestone 2: Rising Star -->
-                        <div class="milestone-card" id="milestone-2">
-                            <div class="milestone-emoji">⭐</div>
-                            <div class="milestone-title">Rising Star</div>
-                            <div class="milestone-hours">10 hours</div>
-                        </div>
-                        <!-- Milestone 3: Eco Warrior -->
-                        <div class="milestone-card" id="milestone-3">
-                            <div class="milestone-emoji">🌿</div>
-                            <div class="milestone-title">Eco Warrior</div>
-                            <div class="milestone-hours">25 hours</div>
-                        </div>
-                        <!-- Milestone 4: Community Hero -->
-                        <div class="milestone-card" id="milestone-4">
-                            <div class="milestone-emoji">🦸</div>
-                            <div class="milestone-title">Hero</div>
-                            <div class="milestone-hours">50 hours</div>
-                        </div>
-                        <!-- Milestone 5: Legend -->
-                        <div class="milestone-card" id="milestone-5">
-                            <div class="milestone-emoji">🏆</div>
-                            <div class="milestone-title">Legend</div>
-                            <div class="milestone-hours">100 hours</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 1rem;">
-                        <div class="progress-bar" style="height: 8px;">
-                            <div class="progress-fill" id="journey-progress" style="width: 0%;"></div>
-                        </div>
-                        <div class="text-sm text-gray-600 mt-2" id="journey-text">Complete your first volunteer hour to
-                            start your journey!</div>
-                    </div>
-                </div>
             </div>
 
             <!-- Stats Cards -->
@@ -294,19 +161,129 @@
                 </div>
             </div>
 
-            <!-- Badges Section -->
+            <!-- Profile Information Section -->
             <div class="card mb-8">
                 <div class="card-header">
-                    <h3 style="margin: 0;">My Badges</h3>
-                    <p class="text-sm text-gray-600 mt-1">Earn achievement badges through volunteer service</p>
+                    <h3 style="margin: 0;">Profile</h3>
                 </div>
                 <div class="card-content">
-                    <div class="grid grid-cols-3" id="badges-container">
-                        <!-- Badges will be loaded here -->
+                    <div class="grid grid-cols-2" style="gap: 1.5rem;">
+                        <!-- Display Name -->
+                        <div>
+                            <label class="form-label">Display
+                                Name</label>
+                            <div class="flex items-center gap-2" id="display-name-container">
+                                <input type="text" id="display-name-input" class="form-input-readonly"
+                                    value="{{ user.display_name or '' }}" placeholder="{{ user.username }}" disabled
+                                    style="flex: 1;" maxlength="120" />
+                                <button id="save-display-name-btn" class="btn btn-primary"
+                                    style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Save</button>
+                                <button id="cancel-display-name-btn" class="btn btn-outline"
+                                    style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Cancel</button>
+                                <button id="edit-display-name-btn" class="btn btn-outline"
+                                    style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="display-name-message"
+                                style="margin-top: 0.5rem; font-size: 0.75rem; display: none;"></div>
+                        </div>
+
+                        <!-- Account Info -->
+                        <div>
+                            <label class="form-label">Account</label>
+                            <div class="form-display">
+                                <div class="form-display-value">
+                                    <span class="form-display-label">Username:</span> <span>{{ user.username }}</span>
+                                </div>
+                                <div class="form-display-value">
+                                    <span class="form-display-label">Email:</span> <span>{{ user.email }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
+            <!-- A-LEVEL INNOVATION: Gamification Milestone Journey -->
+            <!-- Visual progress tracker showing volunteer achievements and next goals -->
+            <div class="card journey-card mb-8">
+                <div class="card-content">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary-green);">
+                                <path
+                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            Volunteer Journey
+                        </h3>
+                        <span class="badge badge-primary" id="volunteer-level">Level 1</span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                        <!-- Milestone 1: First Step -->
+                        <div class="milestone-card completed" id="milestone-1">
+                            <div class="milestone-emoji">🌱</div>
+                            <div class="milestone-title">First Step</div>
+                            <div class="milestone-hours">1 hour</div>
+                        </div>
+                        <!-- Milestone 2: Rising Star -->
+                        <div class="milestone-card" id="milestone-2">
+                            <div class="milestone-emoji">⭐</div>
+                            <div class="milestone-title">Rising Star</div>
+                            <div class="milestone-hours">10 hours</div>
+                        </div>
+                        <!-- Milestone 3: Eco Warrior -->
+                        <div class="milestone-card" id="milestone-3">
+                            <div class="milestone-emoji">🌿</div>
+                            <div class="milestone-title">Eco Warrior</div>
+                            <div class="milestone-hours">25 hours</div>
+                        </div>
+                        <!-- Milestone 4: Community Hero -->
+                        <div class="milestone-card" id="milestone-4">
+                            <div class="milestone-emoji">🦸</div>
+                            <div class="milestone-title">Hero</div>
+                            <div class="milestone-hours">50 hours</div>
+                        </div>
+                        <!-- Milestone 5: Legend -->
+                        <div class="milestone-card" id="milestone-5">
+                            <div class="milestone-emoji">🏆</div>
+                            <div class="milestone-title">Legend</div>
+                            <div class="milestone-hours">100 hours</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div class="progress-bar" style="height: 8px;">
+                            <div class="progress-fill" id="journey-progress" style="width: 0%;"></div>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-2" id="journey-text">Complete your first volunteer hour to
+                            start your journey!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card card-danger mb-8">
+                <div class="card-header card-danger-header">
+                    <h3 class="text-danger" style="margin: 0;">Danger Zone</h3>
+                </div>
+                <div class="card-content">
+                    <div class="flex-between">
+                        <div>
+                            <p style="margin: 0; font-weight: 500;">Delete Account</p>
+                            <p class="text-sm text-gray-600" style="margin: 0.25rem 0 0 0;">Permanently delete your
+                                account and all associated data. This action cannot be undone.</p>
+                        </div>
+                        <button id="delete-account-btn" class="btn btn-danger-solid">
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Browse Projects Tab -->

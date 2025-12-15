@@ -56,6 +56,14 @@ async function loadPendingProjects() {
                             <p class="text-sm text-gray-700 mb-2">Description:</p>
                             <p class="text-sm text-gray-600">${project.description}</p>
                         </div>
+                        <div class="flex items-center gap-2 mb-4">
+                            <label for="project-rating-${project.id}" class="text-sm text-gray-700" style="min-width: 6rem;">Set Rating:</label>
+                            <input type="number" id="project-rating-${project.id}" min="0" max="5" step="0.1"
+                                value="${project.rating ?? ''}"
+                                placeholder="0 - 5"
+                                style="width: 6rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                            <button class="btn btn-outline btn-sm" onclick="saveProjectRating(${project.id})">Save Rating</button>
+                        </div>
                         <div class="flex gap-3">
                             <button class="btn btn-primary" onclick="reviewProject(${project.id}, 'approved')">Approve</button>
                             <button class="btn" style="background-color: #ef4444; color: white;" onclick="reviewProject(${project.id}, 'rejected')">Reject</button>
@@ -106,6 +114,44 @@ async function reviewProject(projectId, status) {
     }
 }
 
+// Save project rating
+async function saveProjectRating(projectId) {
+    const input = document.getElementById(`project-rating-${projectId}`);
+    if (!input) return;
+
+    const value = input.value.trim();
+    if (value === '') {
+        await Modal.info('Please enter a rating between 0 and 5.');
+        return;
+    }
+
+    const rating = parseFloat(value);
+    if (Number.isNaN(rating) || rating < 0 || rating > 5) {
+        await Modal.error('Rating must be a number between 0 and 5.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/v1/projects/${projectId}/rating`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update rating.');
+        }
+
+        await Modal.success('Project rating updated successfully.');
+        // Refresh list to show updated rating
+        loadPendingProjects();
+    } catch (e) {
+        console.error(e);
+        await Modal.error(e.message || 'Failed to update rating.');
+    }
+}
+
 // Load hour records
 async function loadHourRecords() {
     try {
@@ -148,6 +194,18 @@ function renderHourRecords(records) {
         </tr>
     `).join('');
 
+    // Bind select-all checkbox
+    const selectAll = document.getElementById('select-all-records');
+    if (selectAll) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+        selectAll.onchange = () => {
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateBatchCount();
+        };
+    }
+
     updateBatchCount();
 
     document.querySelectorAll('.record-checkbox').forEach(cb => {
@@ -156,9 +214,28 @@ function renderHourRecords(records) {
 }
 
 function updateBatchCount() {
+    const checkboxes = document.querySelectorAll('.record-checkbox');
     const checked = document.querySelectorAll('.record-checkbox:checked').length;
     const btn = document.getElementById('batch-approve-btn');
     if (btn) btn.textContent = `Batch Approve (${checked})`;
+
+    // Sync select-all state
+    const selectAll = document.getElementById('select-all-records');
+    if (selectAll) {
+        if (checkboxes.length === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        } else if (checked === checkboxes.length) {
+            selectAll.checked = true;
+            selectAll.indeterminate = false;
+        } else if (checked === 0) {
+            selectAll.checked = false;
+            selectAll.indeterminate = false;
+        } else {
+            selectAll.checked = false;
+            selectAll.indeterminate = true;
+        }
+    }
 }
 
 async function reviewRecord(recordId, status) {
@@ -234,7 +311,6 @@ async function loadUsers() {
                 <td class="text-sm text-gray-600">${user.created_at || '-'}</td>
                 <td>
                     <div class="flex gap-2">
-                        <button class="btn btn-outline btn-sm" onclick="viewUser(${user.id})">View</button>
                         <button class="btn btn-outline btn-sm" onclick="toggleUserStatus(${user.id}, ${!user.is_active})">
                             ${user.is_active ? 'Disable' : 'Enable'}
                         </button>
@@ -351,17 +427,6 @@ async function deleteUser(userId) {
     }
 }
 
-// Settings
-document.getElementById('save-points-settings-btn')?.addEventListener('click', async () => {
-    // Placeholder logic 
-    const points = document.getElementById('points-per-hour-input').value;
-    await Modal.success(`Points settings saved: ${points} points/hour`);
-});
-
-document.getElementById('save-review-settings-btn')?.addEventListener('click', async () => {
-    await Modal.success('Review settings saved');
-});
-
 // Admin creation
 document.getElementById('create-admin-btn')?.addEventListener('click', async () => {
     // Simple prompt-based creation for now to avoid building a full modal form
@@ -394,17 +459,29 @@ document.getElementById('create-admin-btn')?.addEventListener('click', async () 
     }
 });
 
-// Load system logs
+// Load system logs with pagination
+let logsPage = 1;
+const logsPageSize = 100;
+
 async function loadLogs() {
     const container = document.getElementById('logs-container');
     const levelFilter = document.getElementById('log-level-filter')?.value || '';
+    const pageInfo = document.getElementById('logs-page-info');
+    const prevBtn = document.getElementById('logs-prev-btn');
+    const nextBtn = document.getElementById('logs-next-btn');
 
     if (!container) return;
 
     container.textContent = 'Loading logs...';
 
     try {
-        const url = `/api/v1/admin/logs?lines=200${levelFilter ? `&level=${levelFilter}` : ''}`;
+        const params = new URLSearchParams({
+            page: String(logsPage),
+            page_size: String(logsPageSize)
+        });
+        if (levelFilter) params.append('level', levelFilter);
+
+        const url = `/api/v1/admin/logs?${params.toString()}`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -419,11 +496,35 @@ async function loadLogs() {
         } else {
             container.textContent = data.message || 'No logs available.';
         }
+
+        // Update pagination controls
+        if (pageInfo) {
+            pageInfo.textContent = `Page ${data.page || logsPage} / ${data.total_pages || 1}`;
+        }
+        if (prevBtn) {
+            prevBtn.disabled = (data.page || logsPage) <= 1;
+        }
+        if (nextBtn) {
+            nextBtn.disabled = (data.page || logsPage) >= (data.total_pages || 1);
+        }
     } catch (e) {
         console.error(e);
         container.textContent = 'Error loading logs.';
     }
 }
+
+// Pagination controls
+document.getElementById('logs-prev-btn')?.addEventListener('click', () => {
+    if (logsPage > 1) {
+        logsPage -= 1;
+        loadLogs();
+    }
+});
+
+document.getElementById('logs-next-btn')?.addEventListener('click', () => {
+    logsPage += 1;
+    loadLogs();
+});
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {

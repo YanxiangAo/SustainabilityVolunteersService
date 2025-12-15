@@ -2,7 +2,6 @@
  * participant.js - Participant Dashboard Script
  * Handles functionality for volunteer participant users:
  * - Tab navigation between overview, browse projects, and registrations
- * - Badge rendering and achievement display
  * - Dashboard stats loading from API
  * - Project browsing and registration
  * - Volunteer Journey gamification milestones (A-level innovation)
@@ -51,13 +50,23 @@ function updateMilestoneJourney(totalHours) {
             card.style.opacity = '1';
             completedCount++;
             currentMilestone = m;
-        } else if (completedCount === m.id - 1) {
-            // Next milestone to achieve
-            card.style.border = '2px solid var(--secondary-blue)';
-            card.style.opacity = '0.8';
-            nextMilestone = m;
+        } else {
+            // Reset card style for unachieved milestones
+            card.style.border = '';
+            card.style.opacity = '0.5';
         }
     });
+
+    // Find the next milestone to achieve
+    if (completedCount < milestones.length) {
+        nextMilestone = milestones[completedCount];
+        // Highlight the next milestone
+        const nextCard = document.getElementById(`milestone-${nextMilestone.id}`);
+        if (nextCard) {
+            nextCard.style.border = '2px solid var(--secondary-blue)';
+            nextCard.style.opacity = '0.8';
+        }
+    }
 
     // Update level badge
     const levelBadge = document.getElementById('volunteer-level');
@@ -82,44 +91,6 @@ function updateMilestoneJourney(totalHours) {
     }
 }
 
-// ============================================================
-// Badge Rendering Functions
-// ============================================================
-
-function renderBadges(badges) {
-    const container = document.getElementById('badges-container');
-    if (!container) return;
-
-    container.innerHTML = badges.map(badge => {
-        const earnedClass = badge.earned ? 'badge-earned' : 'badge-locked';
-        const bgColor = badge.earned ? (badge.background_color || '#f3f4f6') : '#f3f4f6';
-        const color = badge.earned ? (badge.accent_color || 'var(--gray-500)') : 'var(--gray-400)';
-
-        return `
-            <div class="volunteer-badge ${earnedClass}" style="background-color: ${bgColor}; border-color: ${color}; color: ${color};">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    ${renderBadgeIcon(badge.code)}
-                </svg>
-                <div class="badge-content">
-                    <div class="badge-name">${badge.name}</div>
-                    <div class="badge-description">${badge.description}</div>
-                </div>
-                ${!badge.earned ? '<div class="badge-locked-tag">Locked</div>' : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-function renderBadgeIcon(code) {
-    switch (code) {
-        case 'eco-pioneer':
-            return '<path d="M12 2v20M2 12h20"/>';
-        case 'rising-star':
-            return '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>';
-        default:
-            return '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>';
-    }
-}
 
 function renderRating(rating) {
     const colorClass = rating < 3 ? 'rating-low' : rating < 4 ? 'rating-medium' : 'rating-high';
@@ -219,17 +190,15 @@ function renderRegistrations(registrations) {
                                 </svg>
                                 ${reg.date}
                             </div>
-                    ${reg.progress ? `
-                                <div>
-                                    <div class="flex justify-between text-sm mb-2">
-                                        <span>Progress</span>
-                                        <span>${reg.progress}%</span>
-                                    </div>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: ${reg.progress}%;"></div>
-                                    </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span>Progress</span>
+                                    <span>${reg.progress !== undefined ? reg.progress : 0}%</span>
                                 </div>
-                            ` : ''}
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${reg.progress !== undefined ? reg.progress : 0}%;"></div>
+                                </div>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 0.5rem; flex-direction: column; align-items: flex-end;">
                             <button class="btn btn-outline" onclick="window.location.href='/project/${reg.id}'">View Details</button>
@@ -450,14 +419,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Initialize delete account button
     initDeleteAccountButton();
 
-    // Load notifications
-    loadNotifications();
-
     fetchDashboardData().then(data => {
         if (data.error) {
             const dashboardContainers = [
                 document.getElementById('browse-projects'),
-                document.getElementById('badges-container'),
                 document.getElementById('my-registrations')
             ];
             dashboardContainers.forEach(container => {
@@ -485,8 +450,6 @@ document.addEventListener('DOMContentLoaded', function () {
             updateMilestoneJourney(stats.total_hours || 0);
         }
 
-        renderBadges(data.badges || []);
-
         // Load available projects for the browse tab
         loadAvailableProjects();
 
@@ -503,7 +466,7 @@ function initDeleteAccountButton() {
         const confirmText = 'DELETE';
 
         const userInput = await Modal.prompt(
-            `WARNING: This action is irreversible!\n\nDeleting your account will permanently remove:\n• All your registrations\n• All your volunteer records\n• All your badges and achievements\n• All your notifications\n\nType "${confirmText}" to confirm deletion:`,
+            `WARNING: This action is irreversible!\n\nDeleting your account will permanently remove:\n• All your registrations\n• All your volunteer records\n• All your comments\n\nType "${confirmText}" to confirm deletion:`,
             { title: 'Delete Account', placeholder: 'Type DELETE to confirm' }
         );
 
@@ -540,131 +503,3 @@ function initDeleteAccountButton() {
     });
 }
 
-// Notifications functionality
-async function loadNotifications() {
-    try {
-        const response = await fetch('/api/v1/notifications');
-        if (!response.ok) return;
-
-        const data = await response.json();
-        updateNotificationBadge(data.unread_count);
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-    }
-}
-
-function updateNotificationBadge(count) {
-    const badge = document.getElementById('notification-badge');
-    if (badge) {
-        if (count > 0) {
-            badge.textContent = count > 99 ? '99+' : count;
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-}
-
-// Show notifications modal
-async function showNotificationsModal() {
-    // Remove existing modal if any
-    const existingModal = document.getElementById('notifications-modal');
-    if (existingModal) existingModal.remove();
-
-    // Create modal
-    const modal = document.createElement('div');
-    modal.id = 'notifications-modal';
-    modal.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.5); z-index: 1000;
-        display: flex; justify-content: center; align-items: flex-start; padding-top: 5rem;
-    `;
-
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: white; border-radius: 8px; width: 90%; max-width: 500px;
-        max-height: 70vh; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    `;
-
-    content.innerHTML = `
-        <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">Notifications</h3>
-            <div style="display: flex; gap: 0.5rem;">
-                <button id="mark-all-read-btn" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Mark All Read</button>
-                <button id="close-notifications-btn" style="background: none; border: none; cursor: pointer; font-size: 1.25rem;">&times;</button>
-            </div>
-        </div>
-        <div id="notifications-list" style="overflow-y: auto; max-height: calc(70vh - 60px); padding: 0.5rem;"></div>
-    `;
-
-    modal.appendChild(content);
-    document.body.appendChild(modal);
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-
-    // Close button
-    document.getElementById('close-notifications-btn').addEventListener('click', () => modal.remove());
-
-    // Mark all read
-    document.getElementById('mark-all-read-btn').addEventListener('click', async () => {
-        await fetch('/api/v1/notifications/mark-all-read', { method: 'POST' });
-        loadNotificationsIntoModal();
-        loadNotifications();
-    });
-
-    // Load notifications into modal
-    await loadNotificationsIntoModal();
-}
-
-async function loadNotificationsIntoModal() {
-    const listEl = document.getElementById('notifications-list');
-    if (!listEl) return;
-
-    try {
-        const response = await fetch('/api/v1/notifications');
-        if (!response.ok) {
-            listEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Failed to load notifications.</p>';
-            return;
-        }
-
-        const data = await response.json();
-
-        if (!data.notifications || data.notifications.length === 0) {
-            listEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No notifications yet.</p>';
-            return;
-        }
-
-        listEl.innerHTML = data.notifications.map(n => `
-            <div style="padding: 0.75rem; border-bottom: 1px solid #f3f4f6; background: ${n.is_read ? 'white' : '#f0fdf4'};">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1;">
-                        <div style="font-weight: 500; font-size: 0.875rem;">${n.title}</div>
-                        <div style="color: #6b7280; font-size: 0.8rem; margin-top: 0.25rem;">${n.message}</div>
-                        <div style="color: #9ca3af; font-size: 0.7rem; margin-top: 0.25rem;">${n.created_at}</div>
-                    </div>
-                    ${!n.is_read ? `<button onclick="markNotificationRead(${n.id})" style="background: none; border: none; color: #22c55e; cursor: pointer; font-size: 0.7rem;">✓ Mark Read</button>` : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error loading notifications:', error);
-        listEl.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">Error loading notifications.</p>';
-    }
-}
-
-async function markNotificationRead(notificationId) {
-    try {
-        await fetch(`/api/v1/notifications/${notificationId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_read: true })
-        });
-        loadNotificationsIntoModal();
-        loadNotifications();
-    } catch (error) {
-        console.error('Error marking notification as read:', error);
-    }
-}

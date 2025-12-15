@@ -1,10 +1,13 @@
 """Volunteer Records API routes."""
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, send_file, current_app
 from flask_login import login_required, current_user
+import logging
 
-from models import db, Project, VolunteerRecord, Notification
+from models import db, Project, VolunteerRecord
+from utils import generate_excel_from_records
 
 bp = Blueprint('api_records', __name__)
+logger = logging.getLogger(__name__)
 
 
 @bp.route('/api/v1/records', methods=['GET'])
@@ -128,25 +131,7 @@ def api_record_update(record_id):
         record.status = data['status']
     
     db.session.commit()
-    
-    # Create notification when volunteer hours are approved/rejected
-    if record.status != old_status and record.status in ('approved', 'rejected'):
-        project = record.project
-        if record.status == 'approved':
-            notification_title = 'Volunteer Hours Approved'
-            notification_message = f'Your {record.hours}h of volunteer work for "{project.title if project else "a project"}" has been approved!'
-        else:
-            notification_title = 'Volunteer Hours Not Approved'
-            notification_message = f'Your volunteer record for "{project.title if project else "a project"}" was not approved.'
-        
-        notification = Notification(
-            user_id=record.user_id,
-            type='record',
-            title=notification_title,
-            message=notification_message
-        )
-        db.session.add(notification)
-        db.session.commit()
+    current_app.logger.info(f'Record status updated id={record.id} from={old_status} to={record.status} by admin={current_user.id}')
     
     return jsonify({
         'id': record.id,
@@ -194,6 +179,7 @@ def api_records_batch_update():
         updated_count += 1
     
     db.session.commit()
+    current_app.logger.info(f'Records batch updated count={updated_count} status={new_status} by admin={current_user.id}')
     
     return jsonify({
         'updated_count': updated_count,
@@ -201,4 +187,126 @@ def api_records_batch_update():
         'status': new_status,
         'message': f'Successfully updated {updated_count} record(s)'
     })
+
+
+@bp.route('/volunteer-record')
+@login_required
+def volunteer_record():
+    if current_user.user_type != 'participant':
+        return redirect(url_for('auth.login'))
+    
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    
+    # Calculate statistics
+    total_hours = sum(r.hours for r in records if r.status == 'approved')
+    total_points = sum(r.points for r in records if r.status == 'approved')
+    completed_count = len([r for r in records if r.status == 'approved'])
+    
+    # Prepare records data with project and organization info
+    records_data = []
+    years_set = set()
+    categories_set = set()
+    
+    for record in records:
+        project = record.project
+        organization = project.organization if project else None
+        
+        # Collect years and categories for filters
+        if record.completed_at:
+            years_set.add(record.completed_at.year)
+        if project and project.category:
+            categories_set.add(project.category)
+        
+        records_data.append({
+            'record': {
+                'id': record.id,
+                'hours': record.hours,
+                'points': record.points,
+                'status': record.status,
+                'completed_at': record.completed_at.strftime('%Y-%m-%d') if record.completed_at else None
+            },
+            'project': {
+                'id': project.id if project else None,
+                'title': project.title if project else 'Unknown Project',
+                'category': project.category if project else None
+            } if project else None,
+            'organization': {
+                'display_name': organization.display_name if organization else None,
+                'username': organization.username if organization else None
+            } if organization else None
+        })
+    
+    return render_template('volunteer_record.html', 
+                         user=current_user, 
+                         records_data=records_data,
+                         total_hours=total_hours,
+                         total_points=total_points,
+                         completed_count=completed_count,
+                         available_years=sorted(years_set, reverse=True),
+                         available_categories=sorted(categories_set))
+
+
+@bp.route('/api/participant/export-all-records')
+@login_required
+def api_export_all_records():
+    """Export all volunteer records for the current participant."""
+    if current_user.user_type != 'participant':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Get all records
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    
+    # Get user display_name (fallback to username if not set)
+    user_display_name = current_user.display_name or current_user.username
+    
+    output, filename = generate_excel_from_records(records, "all_volunteer_records", user_display_name)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@bp.route('/api/participant/export-filtered-records', methods=['POST'])
+@login_required
+def api_export_filtered_records():
+    """Export filtered volunteer records for the current participant."""
+    if current_user.user_type != 'participant':
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    year_filter = data.get('year')
+    category_filter = data.get('category')
+    
+    # Get all records
+    records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
+    
+    # Apply filters
+    filtered_records = []
+    for record in records:
+        # Year filter
+        if year_filter:
+            if not record.completed_at or record.completed_at.year != int(year_filter):
+                continue
+        
+        # Category filter
+        if category_filter:
+            if not record.project or record.project.category != category_filter:
+                continue
+        
+        filtered_records.append(record)
+    
+    # Get user display_name (fallback to username if not set)
+    user_display_name = current_user.display_name or current_user.username
+    
+    output, filename = generate_excel_from_records(filtered_records, "filtered_volunteer_records", user_display_name)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 

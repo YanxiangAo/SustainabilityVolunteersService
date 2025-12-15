@@ -13,7 +13,7 @@
 </head>
 
 <body class="bg-subtle">
-    <!-- Sidebar -->
+    <!-- Sidebar: static admin navigation + role title -->
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="flex items-center gap-2 mb-2">
@@ -30,6 +30,7 @@
             </div>
         </div>
 
+        <!-- Sidebar navigation tabs (wired up by static/js/admin.js) -->
         <nav class="sidebar-nav">
             <button class="nav-item active" data-tab="project-review">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -57,14 +58,6 @@
                 </svg>
                 <span>User Management</span>
             </button>
-            <button class="nav-item" data-tab="settings">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
-                </svg>
-                <span>System Settings</span>
-            </button>
             <button class="nav-item" data-tab="logs">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
@@ -90,9 +83,9 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content: each tab-content below corresponds to one admin module -->
     <main class="main-content">
-        <!-- Project Review Tab -->
+        <!-- Project Review Tab: review and moderate organization-submitted projects -->
         <div class="tab-content active" id="project-review-tab">
             <div class="mb-8">
                 <h2>Project Review</h2>
@@ -168,6 +161,17 @@
                         </p>
                     </div>
 
+                    <!-- Admin rating control -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <label for="project-rating-input" class="text-sm text-gray-700" style="min-width: 7rem;">Set Rating:</label>
+                        <input type="number" id="project-rating-input" name="rating" min="0" max="5" step="0.1"
+                            placeholder="0.0 - 5.0"
+                            style="width: 7rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
+                        <button class="btn btn-outline" id="save-project-rating-btn">
+                            Save Rating
+                        </button>
+                    </div>
+
                     <div class="flex gap-3">
                         <button class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -190,7 +194,7 @@
             </div>
         </div>
 
-        <!-- Hours Review Tab -->
+        <!-- Hours Review Tab: review and certify volunteer hour records -->
         <div class="tab-content" id="hours-review-tab">
             <div class="mb-8 flex items-center justify-between">
                 <div>
@@ -212,7 +216,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 3rem;">
-                                    <input type="checkbox" style="width: 1rem; height: 1rem;">
+                                    <input id="select-all-records" type="checkbox" style="width: 1rem; height: 1rem;">
                                 </th>
                                 <th>Participant</th>
                                 <th>Project Name</th>
@@ -290,7 +294,7 @@
             </div>
         </div>
 
-        <!-- User Management Tab -->
+        <!-- User Management Tab: manage participant / organization / admin accounts -->
         <div class="tab-content" id="user-management-tab">
             <div class="mb-8">
                 <h2>User Management</h2>
@@ -319,7 +323,6 @@
                                 <td class="text-sm text-gray-600">2025-01-15</td>
                                 <td>
                                     <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm">View</button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
                                     </div>
                                 </td>
@@ -334,59 +337,12 @@
                                 <td class="text-sm text-gray-600">2024-12-01</td>
                                 <td>
                                     <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm">View</button>
                                         <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Tab -->
-        <div class="tab-content" id="settings-tab">
-            <div class="mb-8">
-                <h2>System Settings</h2>
-                <p class="text-gray-600">Configure platform parameters and rules</p>
-            </div>
-
-            <div class="card mb-6">
-                <div class="card-header">
-                    <h3 style="margin: 0;">Points Rules</h3>
-                    <p class="text-sm text-gray-600 mt-1">Set the conversion ratio between volunteer hours and points
-                    </p>
-                </div>
-                <div class="card-content">
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="text-sm">1 hour volunteer service = </span>
-                        <input type="number" id="points-per-hour-input" value="20" min="1"
-                            style="width: 5rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
-                        <span class="text-sm">points</span>
-                    </div>
-                    <button id="save-points-settings-btn" class="btn"
-                        style="background-color: var(--accent-purple); color: white;">Save Settings</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 style="margin: 0;">Review Settings</h3>
-                    <p class="text-sm text-gray-600 mt-1">Configure project and hours review rules</p>
-                </div>
-                <div class="card-content">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm">Auto-approve hour records under 3 hours</span>
-                        <input type="checkbox" id="auto-approve-checkbox" style="width: 1.25rem; height: 1.25rem;">
-                    </div>
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-sm">Project publication requires admin review</span>
-                        <input type="checkbox" id="project-review-checkbox" checked
-                            style="width: 1.25rem; height: 1.25rem;">
-                    </div>
-                    <button id="save-review-settings-btn" class="btn"
-                        style="background-color: var(--accent-purple); color: white;">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -410,6 +366,11 @@
                                 <option value="WARNING">WARNING</option>
                                 <option value="ERROR">ERROR</option>
                             </select>
+                            <div class="flex items-center gap-2 text-sm text-gray-600">
+                                <button class="btn btn-outline btn-sm" id="logs-prev-btn">Prev</button>
+                                <span id="logs-page-info">Page 1</span>
+                                <button class="btn btn-outline btn-sm" id="logs-next-btn">Next</button>
+                            </div>
                             <button class="btn btn-outline" onclick="loadLogs()">Refresh</button>
                         </div>
                     </div>
