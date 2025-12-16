@@ -2,7 +2,7 @@
 
 > Connect volunteers with organizations to advance sustainable development.
 
-- **Demo video**: [Milestone 2 (MP4)](video/Milestone%202_Demo.mp4)
+- **Demo video**: [Milestone 2 Demo (Bilibili)](https://www.bilibili.com/video/BV1NzUrBmEht/?spm_id_from=333.1387.list.card_archive.click&vd_source=e6f58c2316bd6fa41e2146ddd9513a79)
 - **Diagrams / screenshots**: see [Screenshots & Diagrams](#screenshots--diagrams).
 
 ---
@@ -68,6 +68,27 @@ python app.py
 
 ---
 
+## Demo Accounts (for testing only)
+
+These mock accounts are seeded automatically for local development and demo:
+
+- **Admin**
+  - Username: `admin`
+  - Email: `admin@example.com`
+  - Password: `admin123`  *(or your `ADMIN_PASSWORD` env var if changed)*
+- **Organization**
+  - Username: `greenearth`
+  - Email: `contact@greenearth.org`
+  - Password: `OrgPass123!`
+- **Participant**
+  - Username: `emma`
+  - Email: `emma@example.com`
+  - Password: `Volunteer123!`
+
+> Do **not** reuse these passwords in production. In real deployments, set strong unique credentials via environment variables.
+
+---
+
 ## Security Notes
 - Production: set `SECRET_KEY`, `ADMIN_PASSWORD`, `DATABASE_URL`, `LOG_FILE`, `LOG_LEVEL`.
 - Admin password is never hardcoded; missing passwords are warned in logs (dev only).
@@ -82,8 +103,8 @@ python app.py
   ![Data Flow Activity](images/data_flow.png)
 - Data flow (sequence)  
   ![Data Flow Sequence](images/data_flow_sequence.png)
-- Demo video  
-  [Milestone 2 Demo](video/Milestone%202_Demo.mp4)
+- Demo video (online)  
+  [Milestone 2 Demo (Bilibili)](https://www.bilibili.com/video/BV1NzUrBmEht/?spm_id_from=333.1387.list.card_archive.click&vd_source=e6f58c2316bd6fa41e2146ddd9513a79)
 
 ---
 
