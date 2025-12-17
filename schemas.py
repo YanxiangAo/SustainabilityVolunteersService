@@ -1,5 +1,5 @@
 from flask_marshmallow import Marshmallow
-from marshmallow import fields, validates_schema, ValidationError, validate, EXCLUDE
+from marshmallow import fields, validates_schema, ValidationError, validate
 
 # Global Marshmallow instance, initialized with the Flask app in app.py
 ma = Marshmallow()
@@ -58,6 +58,3 @@ class ProjectUpdateSchema(ma.Schema):
                 raise ValidationError(
                     {'min_participants': ['Minimum participants cannot be greater than maximum participants.']}
                 )
-
-
-

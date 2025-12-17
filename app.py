@@ -9,7 +9,17 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import text
 from datetime import date, datetime, timedelta
-from models import db, User, Project, Registration, VolunteerRecord, Comment
+from models import (
+    db,
+    User,
+    Project,
+    Registration,
+    VolunteerRecord,
+    Comment,
+    ProjectStatus,
+    RegistrationStatus,
+    VolunteerRecordStatus,
+)
 
 # Load environment variables early so Config picks them up (supports .env files)
 # Use project-root .env even if the working directory differs (e.g., gunicorn/IDE)
@@ -137,7 +147,10 @@ def update_project_dates(app: Flask) -> None:
     
     for i, project in enumerate(projects):
         # Update approved projects to future dates
-        if project.status in ('approved', 'in_progress'):
+        if project.status in (
+            ProjectStatus.APPROVED.value,
+            ProjectStatus.IN_PROGRESS.value,
+        ):
             # Set dates to 15-30 days in the future
             days_offset = 15 + (i % 16)  # Distribute dates between 15-30 days
             project.date = today + timedelta(days=days_offset)
@@ -275,13 +288,13 @@ def seed_sample_data(app: Flask) -> None:
     }
     
     # Set statuses explicitly
-    projects["open_project"].status = 'approved'
-    projects["in_progress_project"].status = 'in_progress'
-    projects["pending_project"].status = 'pending'
-    projects["rejected_project"].status = 'rejected'
-    projects["completed_project"].status = 'completed'
-    projects["record_pending_project"].status = 'approved'
-    projects["record_rejected_project"].status = 'approved'
+    projects["open_project"].status = ProjectStatus.APPROVED.value
+    projects["in_progress_project"].status = ProjectStatus.IN_PROGRESS.value
+    projects["pending_project"].status = ProjectStatus.PENDING.value
+    projects["rejected_project"].status = ProjectStatus.REJECTED.value
+    projects["completed_project"].status = ProjectStatus.COMPLETED.value
+    projects["record_pending_project"].status = ProjectStatus.APPROVED.value
+    projects["record_rejected_project"].status = ProjectStatus.APPROVED.value
     
     db.session.commit()
     
@@ -300,15 +313,17 @@ def seed_sample_data(app: Flask) -> None:
             user_id=user.id, project_id=proj.id, status=status).first()
         if not existing:
             reg = Registration(
-                user_id=user.id, project_id=proj.id, status=status,
-                created_at=datetime.utcnow()
+                user_id=user.id,
+                project_id=proj.id,
+                status=status,
+                created_at=datetime.utcnow(),
             )
             db.session.add(reg)
     
     db.session.commit()
     
     # Create records for completed registrations (pending and approved variants)
-    for reg in Registration.query.filter_by(status='completed').all():
+    for reg in Registration.query.filter_by(status=RegistrationStatus.COMPLETED.value).all():
         existing = VolunteerRecord.query.filter_by(user_id=reg.user_id, project_id=reg.project_id).first()
         if not existing:
             project = reg.project
@@ -317,7 +332,7 @@ def seed_sample_data(app: Flask) -> None:
                 project_id=reg.project_id,
                 hours=project.duration,
                 points=project.points,
-                status='pending',  # pending review by default
+                status=VolunteerRecordStatus.PENDING.value,  # pending review by default
                 completed_at=datetime.utcnow()
             )
             db.session.add(record)
@@ -329,7 +344,7 @@ def seed_sample_data(app: Flask) -> None:
             project_id=projects["record_pending_project"].id,
             hours=projects["record_pending_project"].duration,
             points=projects["record_pending_project"].points,
-            status='pending',
+            status=VolunteerRecordStatus.PENDING.value,
             completed_at=datetime.utcnow()
         ))
     if not VolunteerRecord.query.filter_by(user_id=emma.id, project_id=projects["record_rejected_project"].id).first():
@@ -338,7 +353,7 @@ def seed_sample_data(app: Flask) -> None:
             project_id=projects["record_rejected_project"].id,
             hours=projects["record_rejected_project"].duration,
             points=projects["record_rejected_project"].points,
-            status='rejected',
+            status=VolunteerRecordStatus.REJECTED.value,
             completed_at=datetime.utcnow()
         ))
     

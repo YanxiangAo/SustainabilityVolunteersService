@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 import logging
 
-from models import db, Project, VolunteerRecord
+from models import db, Project, VolunteerRecord, VolunteerRecordStatus
 from utils import generate_excel_from_records
 
 bp = Blueprint('api_records', __name__)
@@ -125,7 +125,11 @@ def api_record_update(record_id):
     old_status = record.status
     
     if 'status' in data:
-        allowed_statuses = {'pending', 'approved', 'rejected'}
+        allowed_statuses = {
+            VolunteerRecordStatus.PENDING.value,
+            VolunteerRecordStatus.APPROVED.value,
+            VolunteerRecordStatus.REJECTED.value,
+        }
         if data['status'] not in allowed_statuses:
             return jsonify({'error': 'Invalid status'}), 400
         record.status = data['status']
@@ -157,14 +161,19 @@ def api_records_batch_update():
     if not isinstance(record_ids, list):
         return jsonify({'error': 'record_ids must be a list'}), 400
     
-    if new_status not in ('pending', 'approved', 'rejected'):
+    allowed_statuses = {
+        VolunteerRecordStatus.PENDING.value,
+        VolunteerRecordStatus.APPROVED.value,
+        VolunteerRecordStatus.REJECTED.value,
+    }
+    if new_status not in allowed_statuses:
         return jsonify({'error': 'Invalid status'}), 400
     
     # Get all records that match the IDs and are pending (for approve action)
-    if new_status == 'approved':
+    if new_status == VolunteerRecordStatus.APPROVED.value:
         records = VolunteerRecord.query.filter(
             VolunteerRecord.id.in_(record_ids),
-            VolunteerRecord.status == 'pending'
+            VolunteerRecord.status == VolunteerRecordStatus.PENDING.value,
         ).all()
     else:
         records = VolunteerRecord.query.filter(VolunteerRecord.id.in_(record_ids)).all()
@@ -197,10 +206,16 @@ def volunteer_record():
     
     records = VolunteerRecord.query.filter_by(user_id=current_user.id).order_by(VolunteerRecord.completed_at.desc()).all()
     
-    # Calculate statistics
-    total_hours = sum(r.hours for r in records if r.status == 'approved')
-    total_points = sum(r.points for r in records if r.status == 'approved')
-    completed_count = len([r for r in records if r.status == 'approved'])
+    # Calculate statistics (only approved records count towards totals)
+    total_hours = sum(
+        r.hours for r in records if r.status == VolunteerRecordStatus.APPROVED.value
+    )
+    total_points = sum(
+        r.points for r in records if r.status == VolunteerRecordStatus.APPROVED.value
+    )
+    completed_count = len(
+        [r for r in records if r.status == VolunteerRecordStatus.APPROVED.value]
+    )
     
     # Prepare records data with project and organization info
     records_data = []

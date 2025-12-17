@@ -4,7 +4,15 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 
-from models import db, Project, Registration, VolunteerRecord
+from models import (
+    db,
+    Project,
+    Registration,
+    VolunteerRecord,
+    ProjectStatus,
+    RegistrationStatus,
+    VolunteerRecordStatus,
+)
 
 bp = Blueprint('api_registrations', __name__)
 logger = logging.getLogger(__name__)
@@ -20,11 +28,14 @@ def _check_and_auto_complete_project(project):
     4. At least one participant has completed
     5. All participants are finalized (completed, cancelled, or rejected)
     """
-    if project.status == 'completed':
+    if project.status == ProjectStatus.COMPLETED.value:
         return False  # Already completed
     
     # Only auto-complete approved or in_progress projects
-    if project.status not in ('approved', 'in_progress'):
+    if project.status not in (
+        ProjectStatus.APPROVED.value,
+        ProjectStatus.IN_PROGRESS.value,
+    ):
         return False
     
     # Check if project date has passed
@@ -40,7 +51,9 @@ def _check_and_auto_complete_project(project):
         return False  # No registrations, can't complete
     
     # Count completed participants
-    completed_count = sum(1 for reg in all_registrations if reg.status == 'completed')
+    completed_count = sum(
+        1 for reg in all_registrations if reg.status == RegistrationStatus.COMPLETED.value
+    )
     
     # Must have at least one completed participant
     if completed_count == 0:
@@ -49,7 +62,12 @@ def _check_and_auto_complete_project(project):
     # Check if all registrations are finalized (completed, cancelled, or rejected)
     # Note: 'registered' and 'approved' are not finalized states
     all_finalized = all(
-        reg.status in ('completed', 'cancelled', 'rejected') 
+        reg.status
+        in (
+            RegistrationStatus.COMPLETED.value,
+            RegistrationStatus.CANCELLED.value,
+            RegistrationStatus.REJECTED.value,
+        )
         for reg in all_registrations
     )
     
@@ -57,12 +75,12 @@ def _check_and_auto_complete_project(project):
         return False  # Not all participants are finalized
     
     # Auto-complete the project
-    project.status = 'completed'
+    project.status = ProjectStatus.COMPLETED.value
     
     # Ensure volunteer records exist for completed participants
     records_created = 0
     for registration in all_registrations:
-        if registration.status == 'completed':
+        if registration.status == RegistrationStatus.COMPLETED.value:
             # Check if volunteer record already exists
             existing_record = VolunteerRecord.query.filter_by(
                 user_id=registration.user_id,
@@ -71,9 +89,9 @@ def _check_and_auto_complete_project(project):
             
             if not existing_record:
                 # Auto-approve short records disabled
-                record_status = 'pending'
+                record_status = VolunteerRecordStatus.PENDING.value
                 if project.duration <= 4 and False:
-                    record_status = 'approved'
+                    record_status = VolunteerRecordStatus.APPROVED.value
                 
                 # Create volunteer record for confirmed participants
                 volunteer_record = VolunteerRecord(
@@ -143,7 +161,10 @@ def api_project_registrations_create(project_id):
     project = Project.query.get_or_404(project_id)
     
     # Validate project status - must be approved or in_progress
-    if project.status not in ('approved', 'in_progress'):
+    if project.status not in (
+        ProjectStatus.APPROVED.value,
+        ProjectStatus.IN_PROGRESS.value,
+    ):
         return jsonify({'error': 'Cannot register for this project. Project is not open for registration.'}), 400
     
     # Validate project date - must not be expired
@@ -159,7 +180,10 @@ def api_project_registrations_create(project_id):
     
     if existing:
         # If registration was cancelled or rejected, prevent re-registration
-        if existing.status in ('cancelled', 'rejected'):
+        if existing.status in (
+            RegistrationStatus.CANCELLED.value,
+            RegistrationStatus.REJECTED.value,
+        ):
             return jsonify({
                 'error': 'Cannot register for this project. Your previous registration was {} and cannot be re-registered.'.format(existing.status)
             }), 400
@@ -168,7 +192,12 @@ def api_project_registrations_create(project_id):
     # Check if project is full
     current_registrations = Registration.query.filter(
         Registration.project_id == project_id,
-        Registration.status.in_(('registered', 'approved'))
+        Registration.status.in_(
+            (
+                RegistrationStatus.REGISTERED.value,
+                RegistrationStatus.APPROVED.value,
+            )
+        ),
     ).count()
     
     if current_registrations >= project.max_participants:
@@ -177,7 +206,7 @@ def api_project_registrations_create(project_id):
     registration = Registration(
         user_id=current_user.id,
         project_id=project_id,
-        status='registered'
+        status=RegistrationStatus.REGISTERED.value,
     )
     db.session.add(registration)
     db.session.commit()
@@ -185,8 +214,11 @@ def api_project_registrations_create(project_id):
     
     # Check if min_participants reached to trigger in_progress status
     new_count = current_registrations + 1
-    if project.status == 'approved' and new_count >= (project.min_participants or 1):
-        project.status = 'in_progress'
+    if (
+        project.status == ProjectStatus.APPROVED.value
+        and new_count >= (project.min_participants or 1)
+    ):
+        project.status = ProjectStatus.IN_PROGRESS.value
         db.session.commit()
         current_app.logger.info(f'Project moved to in_progress id={project.id} new_count={new_count}')
     
@@ -250,14 +282,23 @@ def api_registration_update(registration_id):
     
     data = request.get_json(silent=True) or request.form or {}
     new_status = (data.get('status') or '').strip().lower()
-    allowed_statuses = {'registered', 'approved', 'rejected', 'cancelled', 'completed'}
+    allowed_statuses = {
+        RegistrationStatus.REGISTERED.value,
+        RegistrationStatus.APPROVED.value,
+        RegistrationStatus.REJECTED.value,
+        RegistrationStatus.CANCELLED.value,
+        RegistrationStatus.COMPLETED.value,
+    }
     
     if new_status not in allowed_statuses:
         return jsonify({'error': 'Invalid status'}), 400
     
     # Prevent reactivating cancelled registrations
     # Once a registration is cancelled (by participant or organization), it cannot be reactivated
-    if registration.status == 'cancelled' and new_status != 'cancelled':
+    if (
+        registration.status == RegistrationStatus.CANCELLED.value
+        and new_status != RegistrationStatus.CANCELLED.value
+    ):
         return jsonify({
             'error': 'Cannot update registration status. Once a registration is cancelled, it cannot be reactivated.'
         }), 400
@@ -265,7 +306,7 @@ def api_registration_update(registration_id):
     registration.status = new_status
     
     # If organization confirms participant completed project, auto-create pending volunteer record
-    if new_status == 'completed':
+    if new_status == RegistrationStatus.COMPLETED.value:
         existing_record = VolunteerRecord.query.filter_by(
             user_id=registration.user_id,
             project_id=registration.project_id
@@ -273,16 +314,10 @@ def api_registration_update(registration_id):
         
         if not existing_record:
             # Auto-approve short records disabled (SystemSettings removed)
-            record_status = 'pending'
+            record_status = VolunteerRecordStatus.PENDING.value
             # If you want auto-approve for short projects, adjust here
             if project.duration <= 4 and False:
-                record_status = 'approved'
-            
-            # Auto-approve short records disabled (SystemSettings removed)
-            record_status = 'pending'
-            # If you want auto-approve for short projects, adjust here
-            if project.duration <= 4 and False:
-                record_status = 'approved'
+                record_status = VolunteerRecordStatus.APPROVED.value
             
             volunteer_record = VolunteerRecord(
                 user_id=registration.user_id,
@@ -327,7 +362,7 @@ def api_registration_delete(registration_id):
             return jsonify({'error': 'Unauthorized'}), 403
     
     # Instead of deleting, mark as cancelled
-    registration.status = 'cancelled'
+    registration.status = RegistrationStatus.CANCELLED.value
     db.session.commit()
     current_app.logger.info(f'Registration cancelled id={registration.id} project={registration.project_id} by user={current_user.id}')
     

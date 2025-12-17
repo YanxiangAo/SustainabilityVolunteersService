@@ -3,7 +3,15 @@ from flask import Blueprint, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 
-from models import Project, Registration, VolunteerRecord, User
+from models import (
+    Project,
+    Registration,
+    VolunteerRecord,
+    User,
+    ProjectStatus,
+    RegistrationStatus,
+    VolunteerRecordStatus,
+)
 
 bp = Blueprint('api_dashboard', __name__)
 
@@ -22,13 +30,13 @@ def api_users_me_dashboard():
             project = registration.project
             status_label = registration.status.replace('_', ' ').title()
             progress = 0
-            if registration.status == 'completed':
+            if registration.status == RegistrationStatus.COMPLETED.value:
                 progress = 100
-            elif registration.status == 'in_progress':
+            elif registration.status == ProjectStatus.IN_PROGRESS.value:
                 progress = 75
-            elif registration.status == 'approved':
+            elif registration.status == RegistrationStatus.APPROVED.value:
                 progress = 50
-            elif registration.status == 'registered':
+            elif registration.status == RegistrationStatus.REGISTERED.value:
                 progress = 25
 
             registration_payload.append({
@@ -42,7 +50,10 @@ def api_users_me_dashboard():
             })
 
         # Calculate statistics
-        approved_records = VolunteerRecord.query.filter_by(user_id=current_user.id, status='approved').all()
+        approved_records = VolunteerRecord.query.filter_by(
+            user_id=current_user.id,
+            status=VolunteerRecordStatus.APPROVED.value,
+        ).all()
         total_hours = sum(r.hours for r in approved_records)
         total_points = sum(r.points for r in approved_records)
         completed_count = len(approved_records)
@@ -69,8 +80,16 @@ def api_users_me_dashboard():
         # Get organization's projects
         projects = Project.query.filter_by(organization_id=current_user.id).all()
         
-        active_projects = sum(1 for p in projects if p.status in ('approved', 'in_progress'))
-        active_registration_statuses = ('registered', 'approved')
+        active_projects = sum(
+            1
+            for p in projects
+            if p.status
+            in (ProjectStatus.APPROVED.value, ProjectStatus.IN_PROGRESS.value)
+        )
+        active_registration_statuses = (
+            RegistrationStatus.REGISTERED.value,
+            RegistrationStatus.APPROVED.value,
+        )
         total_participants = sum(
             Registration.query.filter(
                 Registration.project_id == p.id,
@@ -78,8 +97,12 @@ def api_users_me_dashboard():
             ).count()
             for p in projects
         )
-        completed_projects = sum(1 for p in projects if p.status == 'completed')
-        pending_projects = sum(1 for p in projects if p.status == 'pending')
+        completed_projects = sum(
+            1 for p in projects if p.status == ProjectStatus.COMPLETED.value
+        )
+        pending_projects = sum(
+            1 for p in projects if p.status == ProjectStatus.PENDING.value
+        )
         
         projects_payload = []
         for project in projects:
@@ -97,11 +120,16 @@ def api_users_me_dashboard():
         
         # Get recent projects from the last week
         week_ago = datetime.utcnow() - timedelta(days=7)
-        recent_projects = Project.query.filter(
-            Project.organization_id == current_user.id,
-            Project.created_at >= week_ago,
-            Project.status == 'approved'
-        ).order_by(Project.created_at.desc()).limit(8).all()
+        recent_projects = (
+            Project.query.filter(
+                Project.organization_id == current_user.id,
+                Project.created_at >= week_ago,
+                Project.status == ProjectStatus.APPROVED.value,
+            )
+            .order_by(Project.created_at.desc())
+            .limit(8)
+            .all()
+        )
         
         recent_projects_payload = []
         for project in recent_projects:
@@ -132,7 +160,9 @@ def api_users_me_dashboard():
     
     elif user_type == 'admin':
         # Pending projects for review
-        pending_projects = Project.query.filter_by(status='pending').order_by(Project.created_at.desc()).all()
+        pending_projects = Project.query.filter_by(
+            status=ProjectStatus.PENDING.value
+        ).order_by(Project.created_at.desc()).all()
         projects_payload = []
         for project in pending_projects:
             org = project.organization
@@ -150,7 +180,11 @@ def api_users_me_dashboard():
             })
         
         # Pending volunteer records for review
-        pending_records = VolunteerRecord.query.filter_by(status='pending').order_by(VolunteerRecord.completed_at.desc()).all()
+        pending_records = (
+            VolunteerRecord.query.filter_by(status=VolunteerRecordStatus.PENDING.value)
+            .order_by(VolunteerRecord.completed_at.desc())
+            .all()
+        )
         records_payload = []
         for record in pending_records:
             participant = record.user

@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 
-from models import db, Project, Registration, Comment
+from models import db, Project, Registration, Comment, RegistrationStatus
 
 bp = Blueprint('api_comments', __name__)
 
@@ -79,7 +79,13 @@ def api_project_comments_create(project_id):
         registration = Registration.query.filter(
             Registration.user_id == current_user.id,
             Registration.project_id == project_id,
-            Registration.status.in_(('registered', 'approved', 'completed'))
+            Registration.status.in_(
+                (
+                    RegistrationStatus.REGISTERED.value,
+                    RegistrationStatus.APPROVED.value,
+                    RegistrationStatus.COMPLETED.value,
+                )
+            ),
         ).first()
         can_comment = registration is not None
     elif current_user.user_type == 'organization':

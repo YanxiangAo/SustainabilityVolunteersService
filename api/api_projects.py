@@ -13,7 +13,15 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 
-from models import db, Project, Registration, Comment, VolunteerRecord, User
+from models import (
+    db,
+    Project,
+    Registration,
+    Comment,
+    VolunteerRecord,
+    User,
+    ProjectStatus,
+)
 from marshmallow import ValidationError
 from schemas import ProjectCreateSchema, ProjectUpdateSchema
 
@@ -45,7 +53,11 @@ def api_projects_list():
         query = query.filter_by(status=status)
     elif available:
         # For available projects, include both approved and in_progress
-        query = query.filter(Project.status.in_(('approved', 'in_progress')))
+        query = query.filter(
+            Project.status.in_(
+                (ProjectStatus.APPROVED.value, ProjectStatus.IN_PROGRESS.value)
+            )
+        )
     
     if available:
         query = query.filter(Project.date >= today)
@@ -69,7 +81,9 @@ def api_projects_list():
     
     result = []
     for p in projects:
-        current_participants = sum(1 for r in p.registrations if r.status != 'cancelled')
+        current_participants = sum(
+            1 for r in p.registrations if r.status != RegistrationStatus.CANCELLED.value
+        )
         project_data = {
             'id': p.id,
             'title': p.title,
@@ -114,7 +128,9 @@ def api_project_detail(project_id):
         'location': project.location,
         'rating': project.rating,
         'max_participants': project.max_participants,
-        'current_participants': sum(1 for r in project.registrations if r.status != 'cancelled'),
+        'current_participants': sum(
+            1 for r in project.registrations if r.status != RegistrationStatus.CANCELLED.value
+        ),
         'duration': project.duration,
         'points': project.points,
         'status': project.status,
@@ -154,7 +170,9 @@ def api_projects_create():
     
     # Require review by default (SystemSettings removed)
     requires_review = 'true'
-    initial_status = 'pending' if requires_review == 'true' else 'approved'
+    initial_status = (
+        ProjectStatus.PENDING.value if requires_review == 'true' else ProjectStatus.APPROVED.value
+    )
     
     project = Project(
         title=validated_data.get('title'),
@@ -175,7 +193,7 @@ def api_projects_create():
     logger.info(f'Project created id={project.id} status={initial_status} org={current_user.id}')
     
     message = 'Project created successfully'
-    if initial_status == 'approved':
+    if initial_status == ProjectStatus.APPROVED.value:
         message = 'Project created and auto-approved'
     
     return jsonify({
@@ -197,7 +215,7 @@ def api_projects_review(project_id):
     data = request.get_json() or {}
     status = data.get('status')
     
-    if status not in ['approved', 'rejected']:
+    if status not in [ProjectStatus.APPROVED.value, ProjectStatus.REJECTED.value]:
         return jsonify({'error': 'Invalid status'}), 400
         
     project.status = status
@@ -255,13 +273,16 @@ def api_projects_update(project_id):
     
     # Check permissions
     if current_user.user_type == 'admin':
-        # Admin can update status directly
+        # Admin can update status directly (expects a valid ProjectStatus value)
         if 'status' in data:
             project.status = data['status']
             
     elif current_user.user_type == 'organization' and project.organization_id == current_user.id:
         # Organization can update their own projects (but not status to approved/rejected)
-        if 'status' in data and data['status'] in ('approved', 'rejected'):
+        if 'status' in data and data['status'] in (
+            ProjectStatus.APPROVED.value,
+            ProjectStatus.REJECTED.value,
+        ):
             return jsonify({'error': 'Cannot change status to approved/rejected'}), 403
             
         # Validate partial update payload using Marshmallow

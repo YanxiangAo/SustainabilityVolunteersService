@@ -2,10 +2,37 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy.orm import relationship
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, CheckConstraint
+import enum
 
 # SQLAlchemy instance to be initialized in app factory
 db = SQLAlchemy()
+
+
+class ProjectStatus(enum.Enum):
+    """Allowed lifecycle statuses for projects."""
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    IN_PROGRESS = 'in_progress'
+    REJECTED = 'rejected'
+    COMPLETED = 'completed'
+
+
+class RegistrationStatus(enum.Enum):
+    """Allowed statuses for project registrations."""
+    REGISTERED = 'registered'
+    APPROVED = 'approved'
+    CANCELLED = 'cancelled'
+    REJECTED = 'rejected'
+    COMPLETED = 'completed'
+
+
+class VolunteerRecordStatus(enum.Enum):
+    """Allowed statuses for volunteer hour records."""
+    PENDING = 'pending'
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+
 
 # Database Models
 class User(UserMixin, db.Model):
@@ -47,9 +74,15 @@ class Project(db.Model):
     duration = db.Column(db.Float, nullable=False)  # hours
     points = db.Column(db.Integer, nullable=False)
     rating = db.Column(db.Float, default=0.0)
-    status = db.Column(db.String(20), default='pending')  # pending, approved, in_progress, rejected, completed
+    # Store status as string in DB; use ProjectStatus enum for allowed values
+    status = db.Column(db.String(20), default=ProjectStatus.PENDING.value)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     requirements = db.Column(db.Text)
+
+    # Ensure min_participants is never greater than max_participants
+    __table_args__ = (
+        CheckConstraint('min_participants <= max_participants', name='ck_project_min_le_max'),
+    )
     
     registrations = relationship('Registration', backref='project', lazy=True)
     volunteer_records = relationship('VolunteerRecord', backref='project', lazy=True)
@@ -58,8 +91,14 @@ class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    status = db.Column(db.String(20), default='registered')  # registered, completed, cancelled, approved, rejected
+    # Registration lifecycle; see RegistrationStatus enum for allowed values
+    status = db.Column(db.String(20), default=RegistrationStatus.REGISTERED.value)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Prevent duplicate registrations for the same user/project pair
+    __table_args__ = (
+        UniqueConstraint('user_id', 'project_id', name='uq_registration_user_project'),
+    )
 
 class VolunteerRecord(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,7 +106,8 @@ class VolunteerRecord(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     hours = db.Column(db.Float, nullable=False)
     points = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, approved，rejected
+    # Approval workflow for certified hours
+    status = db.Column(db.String(20), default=VolunteerRecordStatus.PENDING.value)  # pending, approved, rejected
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Comment(db.Model):
