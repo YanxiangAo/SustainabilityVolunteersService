@@ -21,6 +21,7 @@ from models import (
     VolunteerRecord,
     User,
     ProjectStatus,
+    RegistrationStatus
 )
 from marshmallow import ValidationError
 from schemas import ProjectCreateSchema, ProjectUpdateSchema

@@ -105,7 +105,7 @@ def api_user_detail(user_id):
     user = User.query.get_or_404(user_id)
     
     # Permission check: Users can only view themselves unless they are admin
-    # Exception: basic profile info might be public in future, but for now restricted.
+    # Exception: basic profile info might be public in the future, but for now restricted.
     if current_user.user_type != 'admin':
         if current_user.id != user_id:
             return jsonify({'error': 'Unauthorized'}), 403

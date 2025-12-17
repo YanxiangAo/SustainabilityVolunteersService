@@ -129,6 +129,7 @@ def api_project_registrations_list(project_id):
         # Admin or organization owner can see all
         registrations = Registration.query.filter_by(project_id=project_id).all()
     
+    # Serialize registrations for JSON response
     result = []
     for reg in registrations:
         participant = reg.user
@@ -367,34 +368,6 @@ def api_registration_delete(registration_id):
     current_app.logger.info(f'Registration cancelled id={registration.id} project={registration.project_id} by user={current_user.id}')
     
     return jsonify({'message': 'Registration cancelled successfully'}), 200
-
-
-@bp.route('/api/organization/registrations/<int:project_id>')
-@login_required
-def api_organization_registrations(project_id):
-    if current_user.user_type != 'organization':
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    project = Project.query.get_or_404(project_id)
-    if project.organization_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    registrations = Registration.query.filter_by(project_id=project_id).all()
-    registrations_payload = []
-    for reg in registrations:
-        participant = reg.user
-        registrations_payload.append({
-            'id': reg.id,
-            'participant_name': participant.display_name or participant.username,
-            'participant_email': participant.email,
-            'registration_date': reg.created_at.strftime('%Y-%m-%d') if reg.created_at else None,
-            'status': reg.status
-        })
-    
-    return jsonify({
-        'project_title': project.title,
-        'registrations': registrations_payload
-    })
 
 
 @bp.route('/api/organization/all-registrations')
