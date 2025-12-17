@@ -1,7 +1,7 @@
 """API package - registers all API and view blueprints."""
 from flask import Flask
 
-from utils.auth import bp as auth_bp
+from api.auth import bp as auth_bp
 from api.views import bp as views_bp
 from api.api_projects import bp as api_projects_bp
 from api.api_registrations import bp as api_registrations_bp
@@ -23,6 +23,8 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(api_comments_bp)
     app.register_blueprint(api_admin_bp)
     app.register_blueprint(api_dashboard_bp)
+
+
 
 
 

@@ -10,7 +10,6 @@ from dotenv import load_dotenv, find_dotenv
 from sqlalchemy import text
 from datetime import date, datetime, timedelta
 from models import db, User, Project, Registration, VolunteerRecord, Comment
-from schemas import ma
 
 # Load environment variables early so Config picks them up (supports .env files)
 # Use project-root .env even if the working directory differs (e.g., gunicorn/IDE)
@@ -44,7 +43,6 @@ def create_app() -> Flask:
 
     # Initialize extensions
     db.init_app(app)
-    ma.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
 

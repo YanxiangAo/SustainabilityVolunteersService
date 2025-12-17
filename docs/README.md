@@ -98,11 +98,11 @@ These mock accounts are seeded automatically for local development and demo:
 
 ## Screenshots & Diagrams
 - Database schema  
-  ![Database Schema](images/database_schema.png)
+![Database Schema](images/database_schema.png)
 - Data flow (activity)  
-  ![Data Flow Activity](images/data_flow.png)
+![Data Flow Activity](images/data_flow.png)
 - Data flow (sequence)  
-  ![Data Flow Sequence](images/data_flow_sequence.png)
+![Data Flow Sequence](images/data_flow_sequence.png)
 - Demo video (online)  
   [Milestone 2 Demo (Bilibili)](https://www.bilibili.com/video/BV1NzUrBmEht/?spm_id_from=333.1387.list.card_archive.click&vd_source=e6f58c2316bd6fa41e2146ddd9513a79)
 

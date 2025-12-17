@@ -1,4 +1,9 @@
-"""Shared utility functions for routes."""
+"""Shared utility helpers (decorators, export helpers, etc.) used by APIs and views.
+
+Currently exports:
+- require_user_type: decorator to enforce a specific Flask-Login user_type
+- generate_excel_from_records: helper to create an Excel export for volunteer records
+"""
 from flask import request, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
@@ -11,7 +16,7 @@ from models import VolunteerRecord
 
 
 def require_user_type(user_type):
-    """Decorator to require specific user type"""
+    """Decorator to require that the current user has the given user_type."""
     def decorator(f):
         @login_required
         def wrapper(*args, **kwargs):
@@ -27,7 +32,7 @@ def require_user_type(user_type):
 
 
 def generate_excel_from_records(records, filename_prefix="volunteer_records", user_display_name=None):
-    """Helper function to generate Excel file from VolunteerRecord list."""
+    """Helper function to generate an Excel workbook from a list of VolunteerRecord rows."""
     wb = Workbook()
     ws = wb.active
     ws.title = "Volunteer Records"
@@ -84,6 +89,8 @@ def generate_excel_from_records(records, filename_prefix="volunteer_records", us
         filename = f"{filename_prefix}_{timestamp}.xlsx"
     
     return output, filename
+
+
 
 
 
