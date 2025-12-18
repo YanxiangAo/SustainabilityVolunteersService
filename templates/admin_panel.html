@@ -86,111 +86,11 @@
     <!-- Main Content: each tab-content below corresponds to one admin module -->
     <main class="main-content">
         <!-- Project Review Tab: review and moderate organization-submitted projects -->
+        <!-- Content is dynamically loaded by admin.js loadPendingProjects() -->
         <div class="tab-content active" id="project-review-tab">
             <div class="mb-8">
                 <h2>Project Review</h2>
                 <p class="text-gray-600">Review volunteer projects submitted by organizations</p>
-            </div>
-
-            <div class="card mb-6">
-                <div class="card-header">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 style="margin: 0;">Rural Teaching Support Activity</h3>
-                            <div class="flex items-center gap-2 mt-2">
-                                <span class="badge badge-orange">Pending Review</span>
-                                <span class="text-sm text-gray-600">Hope Light Education Foundation · Submitted
-                                    2025-11-02</span>
-                            </div>
-                        </div>
-                        <div class="sustainability-rating rating-high">
-                            <div class="stars">
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                    fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon
-                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                    fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon
-                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                    fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon
-                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                                <svg class="star filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                    fill="currentColor" stroke="currentColor" stroke-width="2">
-                                    <polygon
-                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                                <svg class="star" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                    stroke="currentColor" stroke-width="2">
-                                    <polygon
-                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="grid grid-cols-3 gap-4 mb-4 text-sm">
-                        <div>
-                            <span class="text-gray-600">Activity Date: </span>
-                            <span>2025-11-28</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">Expected Participants: </span>
-                            <span>20 people</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-600">Sustainability Rating: </span>
-                            <span>4.2/5.0</span>
-                        </div>
-                    </div>
-
-                    <div
-                        style="background-color: var(--gray-50); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
-                        <p class="text-sm text-gray-700 mb-2">Project Description:</p>
-                        <p class="text-sm text-gray-600">
-                            This project aims to provide quality educational resources to rural children through
-                            teaching support activities, helping them broaden their horizons and cultivate learning
-                            interests. The activity will last one week, with volunteers teaching Chinese, Math, English
-                            and organizing extracurricular activities.
-                        </p>
-                    </div>
-
-                    <!-- Admin rating control -->
-                    <div class="flex items-center gap-3 mb-4">
-                        <label for="project-rating-input" class="text-sm text-gray-700" style="min-width: 7rem;">Set Rating:</label>
-                        <input type="number" id="project-rating-input" name="rating" min="0" max="5" step="0.1"
-                            placeholder="0.0 - 5.0"
-                            style="width: 7rem; padding: 0.5rem; border: 1px solid var(--gray-300); border-radius: var(--border-radius);">
-                        <button class="btn btn-outline" id="save-project-rating-btn">
-                            Save Rating
-                        </button>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <button class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                            Approve
-                        </button>
-                        <button class="btn" style="background-color: #ef4444; color: white;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
-                                <line x1="18" y1="6" x2="6" y2="18" />
-                                <line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                            Reject
-                        </button>
-                        <button class="btn btn-outline">View Details</button>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -228,66 +128,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><input type="checkbox" style="width: 1rem; height: 1rem;"></td>
-                                <td>John Smith</td>
-                                <td>Community Waste Sorting Campaign</td>
-                                <td class="text-sm text-gray-600">Green Earth Environmental</td>
-                                <td><span class="badge badge-secondary">4h</span></td>
-                                <td><span class="badge badge-blue">80 pts</span></td>
-                                <td class="text-sm text-gray-600">2025-10-30</td>
-                                <td>
-                                    <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                style="margin-right: 0.25rem;">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                            Approve
-                                        </button>
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                style="margin-right: 0.25rem;">
-                                                <line x1="18" y1="6" x2="6" y2="18" />
-                                                <line x1="6" y1="6" x2="18" y2="18" />
-                                            </svg>
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><input type="checkbox" style="width: 1rem; height: 1rem;"></td>
-                                <td>Emma Wilson</td>
-                                <td>Digital Skills Training for Seniors</td>
-                                <td class="text-sm text-gray-600">Silver Age Mutual Aid</td>
-                                <td><span class="badge badge-secondary">3h</span></td>
-                                <td><span class="badge badge-blue">60 pts</span></td>
-                                <td class="text-sm text-gray-600">2025-10-28</td>
-                                <td>
-                                    <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm" style="color: var(--primary-green);">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                style="margin-right: 0.25rem;">
-                                                <polyline points="20 6 9 17 4 12" />
-                                            </svg>
-                                            Approve
-                                        </button>
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                style="margin-right: 0.25rem;">
-                                                <line x1="18" y1="6" x2="6" y2="18" />
-                                                <line x1="6" y1="6" x2="18" y2="18" />
-                                            </svg>
-                                            Reject
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Content is dynamically loaded by admin.js loadHourRecords() -->
                         </tbody>
                     </table>
                 </div>
@@ -315,32 +156,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>John Smith</td>
-                                <td><span class="badge badge-secondary">Participant</span></td>
-                                <td class="text-sm text-gray-600">john@example.com</td>
-                                <td><span class="badge badge-success">Active</span></td>
-                                <td class="text-sm text-gray-600">2025-01-15</td>
-                                <td>
-                                    <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Green Earth Environmental</td>
-                                <td><span class="badge badge-secondary"
-                                        style="background-color: #dbeafe; color: var(--secondary-blue);">Organization</span>
-                                </td>
-                                <td class="text-sm text-gray-600">green@example.com</td>
-                                <td><span class="badge badge-success">Active</span></td>
-                                <td class="text-sm text-gray-600">2024-12-01</td>
-                                <td>
-                                    <div class="flex gap-2">
-                                        <button class="btn btn-outline btn-sm" style="color: #ef4444;">Disable</button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Content is dynamically loaded by admin.js loadUsers() -->
                         </tbody>
                     </table>
                 </div>

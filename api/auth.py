@@ -6,7 +6,7 @@ This blueprint handles:
 - Account creation for participant / organization users
 - Session management via Flask-Login
 """
-from flask import Blueprint, render_template, request, redirect, url_for, session, make_response, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 
@@ -83,17 +83,9 @@ def login():
                     )
             
             # Use Flask-Login to log in the user
+            # Flask-Login automatically manages session (stores user_id in session)
+            # Remember me cookie is handled by Flask-Login when remember=True
             login_user(user, remember=bool(form.remember.data))
-
-            # Ensure we don't persist the session unless the user requested it
-            session.permanent = False
-            if not form.remember.data:
-                session['_remember'] = 'clear'
-                session.pop('_remember_seconds', None)
-            
-            # Keep session data for backward compatibility
-            session['user_type'] = user.user_type
-            session['username'] = user.username
             
             if user.user_type == 'participant':
                 return redirect(url_for('views.participant_dashboard'))
@@ -169,13 +161,11 @@ def register():
 @bp.route('/logout')
 @login_required
 def logout():
+    # Flask-Login's logout_user() handles clearing the session and remember cookie
     logout_user()
-    # Ensure remember-me cookies/session flags are cleared
-    session.pop('_remember', None)
-    session.pop('_remember_seconds', None)
-    session.clear()
     
     response = make_response(redirect(url_for('views.index')))
+    # Explicitly delete remember cookie (Flask-Login should handle this, but being explicit)
     remember_cookie_name = current_app.config.get('REMEMBER_COOKIE_NAME', 'remember_token')
     response.delete_cookie(remember_cookie_name)
     return response
