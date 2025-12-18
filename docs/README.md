@@ -12,20 +12,20 @@
 2. [Features](#features)
 3. [Tech Stack](#tech-stack)
 4. [Quick Start](#quick-start)
-5. [Security Notes](#security-notes)
-6. [Screenshots & Diagrams](#screenshots--diagrams)
-7. [Project Structure](#project-structure)
-8. [Key Pages](#key-pages)
-9. [Database Models](#database-models)
-10. [License](#license)
+5. [Demo Accounts](#demo-accounts-for-testing-only)
+6. [Security Notes](#security-notes)
+7. [Screenshots & Diagrams](#screenshots--diagrams)
+8. [Project Structure](#project-structure)
+9. [Key Pages](#key-pages)
+10. [Database Models](#database-models)
+11. [License](#license)
 
 ---
 
 ## Author
 - **Project Author**: Yanxiang Ao, Haoming Xi, Honghao Liu  
-- **Course / Year**: 2024-2025  
+- **Course / Year**: 2025-2026  
 - This project is original work; external libraries are listed in `requirements.txt`.
-
 ---
 
 ## Features
@@ -97,12 +97,30 @@ These mock accounts are seeded automatically for local development and demo:
 ---
 
 ## Screenshots & Diagrams
+
+### Database & Architecture
 - Database schema  
 ![Database Schema](images/database_schema.png)
 - Data flow (activity)  
 ![Data Flow Activity](images/data_flow.png)
 - Data flow (sequence)  
 ![Data Flow Sequence](images/data_flow_sequence.png)
+
+### Demo Screenshots
+- Home page  
+![Home Page](images/demo_home.png)
+- Login/Register page  
+![Login/Register](images/demo_register.png)
+- Participant Dashboard  
+![Participant Dashboard](images/demo_participant.png)
+- Organization Dashboard  
+![Organization Dashboard](images/demo_organization.png)
+- Project Detail page  
+![Project Detail](images/demo_project.png)
+- Admin Panel  
+![Admin Panel](images/demo_admin.png)
+
+### Demo Video
 - Demo video (online)  
   [Milestone 2 Demo (Bilibili)](https://www.bilibili.com/video/BV1NzUrBmEht/?spm_id_from=333.1387.list.card_archive.click&vd_source=e6f58c2316bd6fa41e2146ddd9513a79)
 
@@ -145,4 +163,10 @@ docs/video/           # Demo video
 ---
 
 ## License
-MIT License — free for educational or commercial use.
+MIT License
+
+Copyright (c) 2025 YanxiangAo
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+
+Free for educational or commercial use.
